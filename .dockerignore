@@ -1,0 +1,17 @@
+node_modules
+dist
+coverage
+test
+postman
+helm
+.git
+.gitignore
+.dockerignore
+.env
+.env.*
+!.env.example
+*.log
+Dockerfile
+docker-compose.yml
+README.md
+minikube-linux-amd64

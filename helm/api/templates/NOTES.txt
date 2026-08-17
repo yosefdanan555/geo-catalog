@@ -1,0 +1,23 @@
+"{{ include "api.fullname" . }}" has been deployed.
+
+Check it came up:
+  kubectl get deploy,pods,svc -l app.kubernetes.io/instance={{ .Release.Name }}
+
+{{- if .Values.autoscaling.enabled }}
+Autoscaling is enabled ({{ .Values.autoscaling.minReplicas }}-{{ .Values.autoscaling.maxReplicas }} replicas):
+  kubectl get hpa {{ include "api.fullname" . }}
+{{- end }}
+
+{{- if .Values.ingress.enabled }}
+Reachable via Ingress at:
+{{- range .Values.ingress.hosts }}
+  http://{{ .host }}{{ (index .paths 0).path }}
+{{- end }}
+{{- else if .Values.route.enabled }}
+Reachable via Route at:
+  {{ .Values.route.host | default (printf "<host assigned by the cluster - run: kubectl get route %s>" (include "api.fullname" .)) }}
+{{- else }}
+No Ingress/Route enabled — reach it with:
+  kubectl port-forward svc/{{ include "api.fullname" . }} 3000:{{ .Values.service.port }}
+  curl http://localhost:3000/health
+{{- end }}
