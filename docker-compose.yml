@@ -14,7 +14,7 @@ services:
       POSTGRES_PASSWORD: catalog
       POSTGRES_DB: catalog_test
     ports:
-      - '5433:5432'
+      - '5432:5432'
     tmpfs:
       - /var/lib/postgresql/data
     # Durability we'd never accept in prod is free speed here: data lives on tmpfs

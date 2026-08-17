@@ -9,7 +9,13 @@ const MAX_POOL_SIZE = 10;
 function createConnectionOptions(): Knex.Config {
   return {
     client: 'pg',
-    connection: dbConfig.connectionString,
+    connection: {
+      host: dbConfig.host,
+      port: dbConfig.port,
+      user: dbConfig.username,
+      password: dbConfig.password,
+      database: dbConfig.database,
+    },
     migrations: {
       directory: path.join(__dirname, 'migrations'),
     },

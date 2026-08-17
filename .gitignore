@@ -1,7 +1,5 @@
 node_modules/
 dist/
-.env
-.env.test
 coverage/
 *.log
 minikube-linux-amd64

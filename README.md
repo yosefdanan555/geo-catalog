@@ -27,7 +27,7 @@ src/
     tracing.ts
     errors/                     # AppError hierarchy -> HTTP status codes (picked up by error-express-handler)
     db/
-      dbConfig.ts                # DB connection env vars — outside @map-colonies/config; this service's own contract
+      dbConfig.ts                # DB connection config (config/*.json's "db" key) — outside @map-colonies/config; this service's own contract
       createConnection.ts         # knex instance, DI-registered as a cached singleton (SERVICES.DB_CONNECTION)
       migrate.ts                  # CLI: `tsx src/common/db/migrate.ts latest|rollback`
       migrations/
@@ -63,7 +63,7 @@ helm/api/                      # generic chart: Deployment + Service + HPA + Ing
   paths) via `@map-colonies/config` and `commonBoilerplateV3`. The Postgres
   connection is this service's own concern (the boilerplate has no DB story), so
   it stays in `common/db/dbConfig.ts`, validated separately with `zod` and read
-  straight from the environment — see [Databases](#databases).
+  straight from `config/*.json`'s `db` key — see [Databases](#databases).
 - **Generated request/response types** — `src/openapi.d.ts` is generated from
   `openapi3.yaml` (`npm run generate:openapi-types`, also a `prebuild` step) via
   `@map-colonies/openapi-generators`; controllers implement
@@ -78,20 +78,39 @@ instances, kept intentionally isolated from each other:
 - **Dev**: whatever Postgres+PostGIS you're using locally — a plain Docker
   container, or a Postgres deployed via Helm into a local cluster (e.g.
   `helm install my-release bitnami/postgresql`, reached with `kubectl
-  port-forward svc/my-release-postgresql 5432:5432`). Configured via `.env`.
+  port-forward svc/my-release-postgresql 5432:5432`). Configured via the `db`
+  key in `config/default.json`.
 - **Test**: a disposable, tmpfs-backed container defined in `docker-compose.yml`
   (`localhost:5433`, db `catalog_test`), fully isolated from whatever dev
   database you're using, started automatically by the test suite itself.
-  **Never point `.env.test` at the same database as `.env`** — the test suite
-  truncates the `products` table before every test.
+  Configured via the `db` key in `config/test.json`, which layers on top of
+  `config/default.json` when `NODE_ENV=test`. **Never point it at the same
+  database as dev** — the test suite truncates the `products` table before
+  every test.
 
-The connection is configured either way:
+The connection is configured exactly one way — discrete `host`/`port`/
+`username`/`password`/`database` fields under `db` in `config/*.json`, e.g.:
 
-- `DATABASE_URL` — one connection string (`postgres://user:pass@host:port/db`).
-  Simplest for local dev; that's what `.env`/`.env.test` use.
-- Or discrete `DB_HOST`/`DB_PORT`/`DB_USER`/`DB_PASSWORD`/`DB_NAME` — used by
-  the Helm chart, since a Bitnami-style Postgres chart's generated Secret holds
-  only the password, not a ready-made URL (see `src/common/db/dbConfig.ts`).
+```json
+{
+  "db": {
+    "host": "localhost",
+    "port": 5432,
+    "username": "admin",
+    "password": "secret",
+    "database": "spatial_db"
+  }
+}
+```
+
+Same node-config-style layering as the rest of `config/` (`default.json`
+always applies, `{NODE_ENV}.json` layers on top — see
+`src/common/db/dbConfig.ts`), read directly rather than through
+`@map-colonies/config`'s `commonBoilerplateV3` schema, which knows nothing
+about this service's DB. No `DATABASE_URL`/env var alternative — a real
+production deployment supplies `config/production.json` however it supplies
+its other config (baked into the image, or overlaid at deploy time — see
+[Kubernetes / Helm](#kubernetes--helm)).
 
 ## Running
 
@@ -100,7 +119,7 @@ npm install
 
 # Dev server: builds once, then runs the built output with the config server
 # skipped (CONFIG_OFFLINE_MODE=true) — expects a reachable Postgres+PostGIS per
-# .env's DATABASE_URL.
+# config/default.json's "db" key.
 npm run start:dev            # http://localhost:8080 (config/default.json's server.port)
 
 # Production build + start (talks to a real @map-colonies config-server unless
@@ -112,7 +131,7 @@ Migrations aren't run automatically by any of the above — apply them yourself
 first:
 
 ```bash
-npm run db:migrate           # NODE_ENV=development, i.e. against .env's DATABASE_URL
+npm run db:migrate           # NODE_ENV=development, i.e. against config/default.json's "db" key
 ```
 
 ## Testing
@@ -140,7 +159,6 @@ npm run docker:build           # docker build -t geospatial-catalog-service:late
 
 docker run --rm -p 8080:8080 \
   -e CONFIG_OFFLINE_MODE=true \
-  -e DATABASE_URL=postgres://user:pass@host.docker.internal:5432/spatial_db \
   geospatial-catalog-service:latest
 ```
 
@@ -148,22 +166,32 @@ Two-stage `Dockerfile` (matching `ts-server-boilerplate`'s): one stage installs
 dependencies and runs `npm run build` (which also copies `config/` and
 `openapi3.yaml` into `dist/`), the production stage installs only production
 dependencies and copies that `dist/` in, running as the non-root `node` user.
-`host.docker.internal` reaches Postgres running on your host (Docker Desktop
-resolves this out of the box); swap it for a real hostname/service in any other
-environment. The image never runs migrations itself — run those separately
-(`DATABASE_URL=... node dist/common/db/migrate.js latest`) before starting it,
-the same way you would for a real deploy.
+The DB the container talks to is whatever `db` key ends up in
+`dist/config/production.json` (`NODE_ENV=production` is set in the
+`Dockerfile`) — bake real values into `config/production.json` before building,
+or overlay the file at container-start time (e.g. `-v
+$(pwd)/production.json:/usr/src/app/config/production.json:ro`) if you'd rather
+not check them into the image. `host.docker.internal` reaches Postgres running
+on your host (Docker Desktop resolves this out of the box) if you point
+`db.host` at it. The image never runs migrations itself — run those separately
+(`NODE_ENV=production node dist/common/db/migrate.js latest`) before starting
+it, the same way you would for a real deploy.
 
 ## Kubernetes / Helm
 
 `helm/api/` deploys the image built above to Kubernetes: a generic, minimal
 chart — Deployment + Service + HorizontalPodAutoscaler + Ingress/Route, each
 toggleable independently, no database or migration awareness at all. Env vars
-(including anything DB-related, and `CONFIG_OFFLINE_MODE`, since no
-config-server is deployed alongside this chart) are a plain pass-through list,
-the same shape as a Pod spec's own `env`/`envFrom`. Run migrations yourself
-before installing/upgrading (`node dist/common/db/migrate.js latest`, pointed
-at the target database) — this chart doesn't run them for you.
+(just `NODE_ENV`/`CONFIG_OFFLINE_MODE` by default, since no config-server is
+deployed alongside this chart, and the app doesn't read DB settings from env
+vars at all) are a plain pass-through list, the same shape as a Pod spec's own
+`env`/`envFrom`. `volumes`/`volumeMounts` are the same kind of pass-through,
+there specifically so a real deployment can overlay `config/production.json`
+(baked into the image as an empty `{}`) with one built from a Secret, instead
+of checking a real DB password into the image — see the commented-out example
+in `values.yaml`. Run migrations yourself before installing/upgrading
+(`node dist/common/db/migrate.js latest`, pointed at the target database) —
+this chart doesn't run them for you.
 
 **Prerequisites**: a running cluster and `helm` installed. If using minikube,
 build the image where the cluster can see it first (minikube runs its own
@@ -178,7 +206,9 @@ npm run docker:build
 
 ```bash
 helm install catalog-api ./helm/api \
-  --set-json 'env=[{"name":"CONFIG_OFFLINE_MODE","value":"true"},{"name":"DATABASE_URL","valueFrom":{"secretKeyRef":{"name":"my-secret","key":"database-url"}}}]'
+  --set-json 'env=[{"name":"CONFIG_OFFLINE_MODE","value":"true"}]' \
+  --set-json 'volumes=[{"name":"db-config","secret":{"secretName":"my-secret","items":[{"key":"production.json","path":"production.json"}]}}]' \
+  --set-json 'volumeMounts=[{"name":"db-config","mountPath":"/usr/src/app/config/production.json","subPath":"production.json","readOnly":true}]'
 ```
 
 **Autoscaling** (`autoscaling.enabled=true`) needs `resources.requests` set on
@@ -209,9 +239,9 @@ Verified with `helm lint` and `helm template` (defaults, HPA+Ingress+env, and
 Route-only) — not live-installed anywhere, so double-check against your actual
 cluster/image registry before relying on it as-is.
 
-See `helm/api/values.yaml` for the full set of options. Its checked-in `env`
-sources `DB_PASSWORD` from the `helm/postgresql` release's own Secret rather
-than a plaintext value — see the comment right above it in the file.
+See `helm/api/values.yaml` for the full set of options, including the
+commented-out `volumes`/`volumeMounts` example for overlaying
+`config/production.json` from a Secret.
 
 A `helm/deploy.sh` may exist locally for one-off manual deploys against a
 specific registry/cluster — it's `.gitignore`d on purpose (it tends to

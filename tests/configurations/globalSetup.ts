@@ -1,8 +1,8 @@
 import { execSync } from 'node:child_process';
 import path from 'node:path';
 
-// Runs in its own process, ahead of the `test` env-file auto-selection in
-// src/common/db/dbConfig.ts, so it must set this itself before that module
+// Runs in its own process, ahead of the `test`/config/test.json auto-selection
+// in src/common/db/dbConfig.ts, so it must set this itself before that module
 // (transitively) loads.
 process.env.NODE_ENV = 'test';
 
