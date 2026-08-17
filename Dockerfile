@@ -1,41 +1,28 @@
 # syntax=docker/dockerfile:1
+FROM node:24 AS build
 
-# ---- deps: install once, reused by both the build and prod stages ----
-FROM node:24-alpine AS deps
-WORKDIR /app
-COPY package.json package-lock.json ./
-RUN npm ci
+WORKDIR /tmp/buildApp
 
-# ---- build: compile TypeScript -> dist ----
-FROM node:24-alpine AS build
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
-COPY package.json package-lock.json tsconfig.json ./
-COPY src ./src
+COPY ./package*.json ./
+RUN npm install
+COPY . .
 RUN npm run build
 
-# ---- prod deps: only what's needed at runtime (no typescript/jest/tsx/etc.) ----
-FROM node:24-alpine AS prod-deps
-WORKDIR /app
-COPY package.json package-lock.json ./
-RUN npm ci --omit=dev && npm cache clean --force
+FROM node:24-alpine AS production
 
-# ---- runtime: the actual image that ships ----
-FROM node:24-alpine AS runtime
+RUN apk add --no-cache dumb-init
+
 ENV NODE_ENV=production
-WORKDIR /app
+ENV SERVER_PORT=8080
 
-COPY --from=prod-deps /app/node_modules ./node_modules
-COPY --from=build /app/dist ./dist
-COPY package.json ./
-COPY openapi.yaml ./openapi.yaml
+WORKDIR /usr/src/app
 
-# Runs as the non-root `node` user baked into the base image, not root.
+COPY --chown=node:node package*.json ./
+RUN npm ci --omit=dev
+
+COPY --chown=node:node --from=build /tmp/buildApp/dist .
+
 USER node
+EXPOSE 8080
 
-EXPOSE 3000
-
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get({host:'127.0.0.1',port:process.env.PORT||3000,path:'/health'},r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"
-
-CMD ["node", "dist/server.js"]
+CMD ["dumb-init", "node", "--import", "./instrumentation.mjs", "./index.js"]

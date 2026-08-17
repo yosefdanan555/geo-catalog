@@ -18,6 +18,6 @@ Reachable via Route at:
   {{ .Values.route.host | default (printf "<host assigned by the cluster - run: kubectl get route %s>" (include "api.fullname" .)) }}
 {{- else }}
 No Ingress/Route enabled — reach it with:
-  kubectl port-forward svc/{{ include "api.fullname" . }} 3000:{{ .Values.service.port }}
-  curl http://localhost:3000/health
+  kubectl port-forward svc/{{ include "api.fullname" . }} 8080:{{ .Values.service.port }}
+  curl http://localhost:8080/liveness
 {{- end }}

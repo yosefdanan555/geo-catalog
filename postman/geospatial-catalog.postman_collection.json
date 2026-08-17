@@ -1,28 +1,28 @@
 {
   "info": {
     "name": "Geospatial Products Catalog API",
-    "description": "Demonstrates the CRUD and advanced filtering (equality, numeric comparison, combined, and spatial WKT) capabilities of the Geospatial Products Catalog REST API, built with Express and Postgres/PostGIS. Includes a liveness health check outside the /api/v1 prefix.",
+    "description": "Demonstrates the CRUD and advanced filtering (equality, numeric comparison, combined, and spatial WKT) capabilities of the Geospatial Products Catalog REST API, built with Express and Postgres/PostGIS. Includes a liveness health check outside the root path.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
     {
-      "name": "Health",
+      "name": "Liveness",
       "item": [
         {
-          "name": "Health Check",
+          "name": "Liveness Check",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/health",
+              "raw": "{{baseUrl}}/liveness",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "health"
+                "liveness"
               ]
             },
-            "description": "Liveness probe for the service. Lives outside the /api/v1 prefix and simply returns {\"status\":\"ok\"} when the service is up."
+            "description": "Liveness probe for the service. Lives outside the root path and simply returns {\"status\":\"ok\"} when the service is up."
           },
           "response": [],
           "event": [
@@ -61,14 +61,12 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/products",
+              "raw": "{{baseUrl}}/product",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "api",
-                "v1",
-                "products"
+                "product"
               ]
             },
             "description": "Creates a new geospatial product. On success, the response body (containing the generated `id`) is captured and stored in the `productId` collection variable so the Get/Update/Delete-by-id requests below can be run right after this one (e.g. via Collection Runner) and automatically operate on the newly created product.",
@@ -110,14 +108,12 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/products/{{productId}}",
+              "raw": "{{baseUrl}}/product/{{productId}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "api",
-                "v1",
-                "products",
+                "product",
                 "{{productId}}"
               ]
             },
@@ -154,14 +150,12 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/products/{{productId}}",
+              "raw": "{{baseUrl}}/product/{{productId}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "api",
-                "v1",
-                "products",
+                "product",
                 "{{productId}}"
               ]
             },
@@ -201,14 +195,12 @@
             "method": "DELETE",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/products/{{productId}}",
+              "raw": "{{baseUrl}}/product/{{productId}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "api",
-                "v1",
-                "products",
+                "product",
                 "{{productId}}"
               ]
             },
@@ -240,14 +232,12 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/products?name=Tel%20Aviv%20Orthophoto%202024",
+              "raw": "{{baseUrl}}/product?name=Tel%20Aviv%20Orthophoto%202024",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "api",
-                "v1",
-                "products"
+                "product"
               ],
               "query": [
                 {
@@ -283,14 +273,12 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/products?type=raster",
+              "raw": "{{baseUrl}}/product?type=raster",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "api",
-                "v1",
-                "products"
+                "product"
               ],
               "query": [
                 {
@@ -326,14 +314,12 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/products?consumption_protocol=WMTS",
+              "raw": "{{baseUrl}}/product?consumption_protocol=WMTS",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "api",
-                "v1",
-                "products"
+                "product"
               ],
               "query": [
                 {
@@ -369,14 +355,12 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/products?resolution_best_eq=0.15",
+              "raw": "{{baseUrl}}/product?resolution_best_eq=0.15",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "api",
-                "v1",
-                "products"
+                "product"
               ],
               "query": [
                 {
@@ -417,14 +401,12 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/products?resolution_best_gt=5",
+              "raw": "{{baseUrl}}/product?resolution_best_gt=5",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "api",
-                "v1",
-                "products"
+                "product"
               ],
               "query": [
                 {
@@ -461,14 +443,12 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/products?resolution_best_gte=0.15",
+              "raw": "{{baseUrl}}/product?resolution_best_gte=0.15",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "api",
-                "v1",
-                "products"
+                "product"
               ],
               "query": [
                 {
@@ -505,14 +485,12 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/products?max_zoom_lt=20",
+              "raw": "{{baseUrl}}/product?max_zoom_lt=20",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "api",
-                "v1",
-                "products"
+                "product"
               ],
               "query": [
                 {
@@ -549,14 +527,12 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/products?max_zoom_lte=19",
+              "raw": "{{baseUrl}}/product?max_zoom_lte=19",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "api",
-                "v1",
-                "products"
+                "product"
               ],
               "query": [
                 {
@@ -598,14 +574,12 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/products?type=raster&resolution_best_lte=0.2",
+              "raw": "{{baseUrl}}/product?type=raster&resolution_best_lte=0.2",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "api",
-                "v1",
-                "products"
+                "product"
               ],
               "query": [
                 {
@@ -654,14 +628,12 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/products?intersects=POLYGON%28%2834.7%2031.95%2C%2034.9%2031.95%2C%2034.9%2032.2%2C%2034.7%2032.2%2C%2034.7%2031.95%29%29",
+              "raw": "{{baseUrl}}/product?intersects=POLYGON%28%2834.7%2031.95%2C%2034.9%2031.95%2C%2034.9%2032.2%2C%2034.7%2032.2%2C%2034.7%2031.95%29%29",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "api",
-                "v1",
-                "products"
+                "product"
               ],
               "query": [
                 {
@@ -697,14 +669,12 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/products?contains=POINT%2834.8%2032.05%29",
+              "raw": "{{baseUrl}}/product?contains=POINT%2834.8%2032.05%29",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "api",
-                "v1",
-                "products"
+                "product"
               ],
               "query": [
                 {
@@ -740,14 +710,12 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/products?within=POLYGON%28%2834.0%2031.0%2C%2036.0%2031.0%2C%2036.0%2034.0%2C%2034.0%2034.0%2C%2034.0%2031.0%29%29",
+              "raw": "{{baseUrl}}/product?within=POLYGON%28%2834.0%2031.0%2C%2036.0%2031.0%2C%2036.0%2034.0%2C%2034.0%2034.0%2C%2034.0%2031.0%29%29",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "api",
-                "v1",
-                "products"
+                "product"
               ],
               "query": [
                 {

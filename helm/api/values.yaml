@@ -10,8 +10,8 @@ fullnameOverride: ""
 
 service:
   type: ClusterIP
-  port: 3000
-  targetPort: 3000
+  port: 8080
+  targetPort: 8080
 
 # Plain pass-through env vars — as generic/free-form as a Deployment's own `env`.
 #
@@ -22,9 +22,15 @@ service:
 # dump that secret's keys in verbatim as `postgres-password` etc. — not a name
 # this app reads — so the password is pulled in as its own named `env` entry
 # via secretKeyRef instead, same idea, just renamed to something DB_PASSWORD.)
+#
+# CONFIG_OFFLINE_MODE is required: @map-colonies/config defaults to fetching from
+# a config-server, which isn't deployed here — offline mode makes it validate
+# config/default.json (baked into the image) plus these env vars instead.
 env:
   - name: NODE_ENV
     value: production
+  - name: CONFIG_OFFLINE_MODE
+    value: "true"
   - name: DB_HOST
     value: test-catalog-db-postgresql
   - name: DB_PORT
@@ -47,7 +53,7 @@ env:
 envFrom: []
 
 probes:
-  path: /health
+  path: /liveness
   port: http
   initialDelaySeconds: 5
   periodSeconds: 10
