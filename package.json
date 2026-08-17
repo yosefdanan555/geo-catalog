@@ -31,7 +31,7 @@
     "test:db:up": "docker compose up -d postgres-test",
     "test:db:down": "docker compose down",
     "docker:build": "docker build -t geospatial-catalog-service:latest .",
-    "prepare": "husky"
+    "prepare": "husky || true"
   },
   "author": "",
   "license": "ISC",
