@@ -45,6 +45,8 @@ tests/
 postman/                       # Postman collection demoing every endpoint
 Dockerfile                     # matches ts-server-boilerplate's build/production stages
 helm/api/                      # generic chart: Deployment + Service + HPA + Ingress/Route
+.github/workflows/              # CI/CD: build/push the image, deploy to OpenShift (see CI/CD)
+.husky/                        # pre-commit hook (lint-staged) — see Git hooks
 ```
 
 ### Why this shape
@@ -78,7 +80,7 @@ instances, kept intentionally isolated from each other:
 - **Dev**: whatever Postgres+PostGIS you're using locally — a plain Docker
   container, or a Postgres deployed via Helm into a local cluster (e.g.
   `helm install my-release bitnami/postgresql`, reached with `kubectl
-  port-forward svc/my-release-postgresql 5432:5432`). Configured via the `db`
+port-forward svc/my-release-postgresql 5432:5432`). Configured via the `db`
   key in `config/default.json`.
 - **Test**: a disposable, tmpfs-backed container defined in `docker-compose.yml`
   (`localhost:5433`, db `catalog_test`), fully isolated from whatever dev
@@ -150,7 +152,20 @@ the container running for manual poking around outside of a test run.
 
 `npx tsc --noEmit` (or `npm run build`) type-checks the project. `npm run lint`
 runs ESLint (`@map-colonies/eslint-config`); `npm run lint:openapi` lints
-`openapi3.yaml` with Redocly.
+`openapi3.yaml` with Redocly. `npm run format`/`format:fix` run Prettier
+(`prettier.config.js`, reusing `@map-colonies/prettier-config` — single
+quotes, 150-char print width, es5 trailing commas; see `.prettierignore` for
+what's excluded and why).
+
+## Git hooks
+
+`npm install` sets up a Husky pre-commit hook (its `prepare` script runs
+`husky`, which points git at `.husky/`) that runs `lint-staged` on every
+commit: `eslint --fix` + `prettier --write`, but only on the files staged for
+that commit, then re-stages whatever they changed — so lint/format fixes land
+in the same commit instead of showing up as an unstaged diff afterwards. An
+unfixable ESLint error aborts the commit. Config lives in package.json's
+`lint-staged` key; the hook itself is `.husky/pre-commit`.
 
 ## Docker
 
@@ -246,6 +261,35 @@ commented-out `volumes`/`volumeMounts` example for overlaying
 A `helm/deploy.sh` may exist locally for one-off manual deploys against a
 specific registry/cluster — it's `.gitignore`d on purpose (it tends to
 accumulate live credentials) and isn't part of this repo's tracked history.
+
+## CI/CD
+
+[`.github/workflows/docker-build-deploy.yml`](.github/workflows/docker-build-deploy.yml)
+builds the Docker image and deploys it to OpenShift via the `helm/api` chart
+above:
+
+- **Any push/PR touching `main`, or a manual run** — builds the image. A pull
+  request only builds (a Dockerfile smoke test, no registry credentials
+  touched); a push to `main` also pushes it to
+  `acrarolibotnonprod.azurecr.io/test-catalog`, tagged with the short commit
+  SHA and `latest`.
+- **Push to `main` (or manual run)** — then deploys that image to OpenShift
+  with `helm upgrade --install`, same as the manual `helm install` commands
+  above but non-interactive.
+
+It needs these configured under the repo's Settings → Secrets and variables →
+Actions before it'll run end-to-end:
+
+| Name                            | Kind     | Purpose                                                                  |
+| ------------------------------- | -------- | ------------------------------------------------------------------------ |
+| `ACR_USERNAME` / `ACR_PASSWORD` | Secret   | Push access to the ACR above                                             |
+| `OPENSHIFT_SERVER`              | Secret   | Cluster API URL (`https://api.<cluster>:6443`)                           |
+| `OPENSHIFT_TOKEN`               | Secret   | Token for a service account allowed to deploy into `OPENSHIFT_NAMESPACE` |
+| `OPENSHIFT_NAMESPACE`           | Variable | Target project/namespace                                                 |
+
+Like the chart itself, migrations aren't run by this workflow — apply them
+yourself against the target database before/after a deploy that changes the
+schema.
 
 ## API
 

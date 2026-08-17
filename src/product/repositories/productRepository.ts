@@ -11,17 +11,7 @@ import { NumberFilter, Product, ProductInput, ProductRow, ProductSearchFilters }
 
 const TABLE = 'products';
 
-const COLUMNS = [
-  'id',
-  'name',
-  'description',
-  'consumption_link',
-  'type',
-  'consumption_protocol',
-  'resolution_best',
-  'min_zoom',
-  'max_zoom',
-] as const;
+const COLUMNS = ['id', 'name', 'description', 'consumption_link', 'type', 'consumption_protocol', 'resolution_best', 'min_zoom', 'max_zoom'] as const;
 
 function toApiProduct(row: ProductRow): Product {
   const product: Product = {

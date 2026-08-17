@@ -2,12 +2,7 @@ import { jsLogger } from '@map-colonies/js-logger';
 import { trace } from '@opentelemetry/api';
 import type { Knex } from 'knex';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import {
-  createRequestSender,
-  expectResponseStatusFactory,
-  type ExpectResponseStatus,
-  type RequestSender,
-} from '@map-colonies/openapi-supertest';
+import { createRequestSender, expectResponseStatusFactory, type ExpectResponseStatus, type RequestSender } from '@map-colonies/openapi-supertest';
 import type { paths, operations } from '@openapi';
 import { getApp } from '@src/app';
 import { initConfig } from '@src/common/config';

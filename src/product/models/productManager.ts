@@ -13,8 +13,7 @@ import { Product, ProductInput, ProductSearchFilters } from './product';
  * does this string look like a real WKT geometry?) belongs here, not there.
  */
 
-const WKT_GEOMETRY_PATTERN =
-  /^\s*(POINT|LINESTRING|POLYGON|MULTIPOINT|MULTILINESTRING|MULTIPOLYGON|GEOMETRYCOLLECTION)\s*\(/i;
+const WKT_GEOMETRY_PATTERN = /^\s*(POINT|LINESTRING|POLYGON|MULTIPOINT|MULTILINESTRING|MULTIPOLYGON|GEOMETRYCOLLECTION)\s*\(/i;
 
 function assertLooksLikeWkt(value: string, paramName: string): void {
   if (!WKT_GEOMETRY_PATTERN.test(value)) {
