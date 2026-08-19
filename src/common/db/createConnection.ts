@@ -1,3 +1,5 @@
+import 'reflect-metadata';
+
 import path from 'node:path';
 import knex, { type Knex } from 'knex';
 import type { FactoryFunction } from 'tsyringe';
@@ -10,11 +12,7 @@ function createConnectionOptions(): Knex.Config {
   return {
     client: 'pg',
     connection: {
-      host: dbConfig.host,
-      port: dbConfig.port,
-      user: dbConfig.username,
-      password: dbConfig.password,
-      database: dbConfig.database,
+      ...dbConfig,
     },
     migrations: {
       directory: path.join(__dirname, 'migrations'),

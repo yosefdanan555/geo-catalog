@@ -13,17 +13,6 @@ service:
   port: 8080
   targetPort: 8080
 
-# Plain pass-through env vars — as generic/free-form as a Deployment's own `env`.
-#
-# Nothing DB-related here: the app only ever reads db.* out of
-# config/default.json + config/{NODE_ENV}.json (baked into the image, see
-# `assets:copy`), never environment variables — see volumes/volumeMounts below
-# for how a real deployment supplies a real production password without
-# checking it into git.
-#
-# CONFIG_OFFLINE_MODE is required: @map-colonies/config defaults to fetching from
-# a config-server, which isn't deployed here — offline mode makes it validate
-# config/default.json (baked into the image) instead.
 env:
   - name: NODE_ENV
     value: production
@@ -37,25 +26,6 @@ env:
 #       name: my-secret
 envFrom: []
 
-# Plain pass-through volumes/volumeMounts, same shape as a Pod spec's own
-# fields. Since db config is JSON-only (no env var override), the way to give
-# this app a real production DB password without checking it into git is to
-# overlay just config/production.json from a Secret at deploy time — e.g. a
-# Secret `test-catalog-db-config` with a `production.json` key holding
-# `{"db": {"host": "...", "port": 5432, "username": "...", "password": "...", "database": "..."}}`:
-#
-# volumes:
-#   - name: db-config
-#     secret:
-#       secretName: test-catalog-db-config
-#       items:
-#         - key: production.json
-#           path: production.json
-# volumeMounts:
-#   - name: db-config
-#     mountPath: /usr/src/app/config/production.json
-#     subPath: production.json
-#     readOnly: true
 volumes: []
 volumeMounts: []
 
@@ -65,9 +35,6 @@ probes:
   initialDelaySeconds: 5
   periodSeconds: 10
 
-# HPA needs these to compute utilization %, so they're set by default rather
-# than left empty (an HPA against a container with no resource requests just
-# silently never scales).
 resources:
   requests:
     cpu: 100m
@@ -81,10 +48,8 @@ autoscaling:
   minReplicas: 1
   maxReplicas: 5
   targetCPUUtilizationPercentage: 80
-  # Leave empty to scale on CPU only.
   targetMemoryUtilizationPercentage: ""
 
-# Plain Kubernetes Ingress. Leave disabled and use `route` instead on OpenShift.
 ingress:
   enabled: false
   className: ""
@@ -95,13 +60,8 @@ ingress:
         - path: /
           pathType: Prefix
   tls: []
-  # tls:
-  #   - secretName: api-tls
-  #     hosts:
-  #       - api.example.local
 
-# OpenShift Route, as an alternative to `ingress` on clusters that don't run
-# an Ingress controller. Enable at most one of the two.
+
 route:
   enabled: true
   host: ""

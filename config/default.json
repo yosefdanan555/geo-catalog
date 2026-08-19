@@ -1,11 +1,4 @@
 {
-  "db": {
-    "host": "localhost",
-    "port": 5432,
-    "username": "catalog",
-    "password": "catalog",
-    "database": "catalog_test"
-  },
   "openapiConfig": {
     "filePath": "./openapi3.yaml",
     "basePath": "/docs",
@@ -39,5 +32,13 @@
         "options": null
       }
     }
+  },
+  "db": {
+    "host": "localhost",
+    "port": 5432,
+    "username": "catalog",
+    "password": "catalog",
+    "database": "catalog_test",
+    "application_name": "geospatial-catalog-service"
   }
 }

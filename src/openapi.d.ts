@@ -2,9 +2,9 @@
 // This file was auto-generated. Do not edit manually.
 // To update, run the error generation script again.
 
-import type { TypedRequestHandlers as ImportedTypedRequestHandlers } from "@map-colonies/openapi-express-types";
+import type { TypedRequestHandlers as ImportedTypedRequestHandlers } from '@map-colonies/openapi-express-types';
 export type paths = {
-  "/product": {
+  '/product': {
     parameters: {
       query?: never;
       header?: never;
@@ -15,17 +15,17 @@ export type paths = {
      * Search products
      * @description Query products using implicit AND logic for all provided filters.
      */
-    get: operations["searchProducts"];
+    get: operations['searchProducts'];
     put?: never;
     /** Create a new product */
-    post: operations["createProduct"];
+    post: operations['createProduct'];
     delete?: never;
     options?: never;
     head?: never;
     patch?: never;
     trace?: never;
   };
-  "/product/{id}": {
+  '/product/{id}': {
     parameters: {
       query?: never;
       header?: never;
@@ -35,12 +35,12 @@ export type paths = {
       cookie?: never;
     };
     /** Get a product by ID */
-    get: operations["getProductById"];
+    get: operations['getProductById'];
     /** Update an existing product */
-    put: operations["updateProduct"];
+    put: operations['updateProduct'];
     post?: never;
     /** Delete a product */
-    delete: operations["deleteProduct"];
+    delete: operations['deleteProduct'];
     options?: never;
     head?: never;
     patch?: never;
@@ -55,27 +55,27 @@ export type components = {
       errors?: Record<string, never>[];
     };
     /** @enum {string} */
-    productType: "raster" | "rasterized vector" | "3d tiles" | "QMesh";
+    productType: 'raster' | 'rasterized vector' | '3d tiles' | 'QMesh';
     /** @enum {string} */
-    consumptionProtocol: "WMS" | "WMTS" | "XYZ" | "3D Tiles";
+    consumptionProtocol: 'WMS' | 'WMTS' | 'XYZ' | '3D Tiles';
     geoJsonPolygon: {
       /** @enum {string} */
-      type: "Polygon";
+      type: 'Polygon';
       coordinates: number[][][];
     };
     productCreate: {
       name: string;
       description?: string;
-      bounding_polygon?: components["schemas"]["geoJsonPolygon"];
+      bounding_polygon?: components['schemas']['geoJsonPolygon'];
       consumption_link?: string;
-      type: components["schemas"]["productType"];
-      consumption_protocol: components["schemas"]["consumptionProtocol"];
+      type: components['schemas']['productType'];
+      consumption_protocol: components['schemas']['consumptionProtocol'];
       /** Format: double */
       resolution_best?: number;
       min_zoom?: number;
       max_zoom?: number;
     };
-    product: components["schemas"]["productCreate"] & {
+    product: components['schemas']['productCreate'] & {
       /** Format: uuid */
       id: string;
     };
@@ -92,8 +92,8 @@ export interface operations {
     parameters: {
       query?: {
         name?: string;
-        type?: components["schemas"]["productType"];
-        consumption_protocol?: components["schemas"]["consumptionProtocol"];
+        type?: components['schemas']['productType'];
+        consumption_protocol?: components['schemas']['consumptionProtocol'];
         resolution_best_eq?: number;
         resolution_best_gt?: number;
         resolution_best_gte?: number;
@@ -128,7 +128,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["product"][];
+          'application/json': components['schemas']['product'][];
         };
       };
       /** @description A query parameter failed validation */
@@ -137,7 +137,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["error"];
+          'application/json': components['schemas']['error'];
         };
       };
     };
@@ -151,7 +151,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["productCreate"];
+        'application/json': components['schemas']['productCreate'];
       };
     };
     responses: {
@@ -161,7 +161,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["product"];
+          'application/json': components['schemas']['product'];
         };
       };
       /** @description Request body failed validation */
@@ -170,7 +170,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["error"];
+          'application/json': components['schemas']['error'];
         };
       };
     };
@@ -192,7 +192,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["product"];
+          'application/json': components['schemas']['product'];
         };
       };
       /** @description Product not found */
@@ -201,7 +201,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["error"];
+          'application/json': components['schemas']['error'];
         };
       };
     };
@@ -217,7 +217,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["productCreate"];
+        'application/json': components['schemas']['productCreate'];
       };
     };
     responses: {
@@ -227,7 +227,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["product"];
+          'application/json': components['schemas']['product'];
         };
       };
       /** @description Request body failed validation */
@@ -236,7 +236,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["error"];
+          'application/json': components['schemas']['error'];
         };
       };
       /** @description Product not found */
@@ -245,7 +245,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["error"];
+          'application/json': components['schemas']['error'];
         };
       };
     };
@@ -274,13 +274,10 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["error"];
+          'application/json': components['schemas']['error'];
         };
       };
     };
   };
 }
-export type TypedRequestHandlers = ImportedTypedRequestHandlers<
-  paths,
-  operations
->;
+export type TypedRequestHandlers = ImportedTypedRequestHandlers<paths, operations>;
