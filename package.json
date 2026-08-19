@@ -8,6 +8,7 @@
   },
   "scripts": {
     "test:unit": "vitest run --coverage.enabled=false --project unit",
+    "coverage": "vitest run --coverage --project unit",
     "test:integration": "vitest run --coverage.enabled=false --project integration",
     "test": "vitest run",
     "test:watch": "vitest watch",

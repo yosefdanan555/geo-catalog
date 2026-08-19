@@ -7,7 +7,7 @@ import type { paths, operations } from '@openapi';
 import { getApp } from '@src/app';
 import { initConfig } from '@src/common/config';
 import { SERVICES } from '@common/constants';
-import { buildProductInput } from '@tests/factories/product.factory';
+import { buildProductInput, telAvivPolygon } from '@tests/factories/product.factory';
 
 const expectResponseStatus: ExpectResponseStatus = expectResponseStatusFactory(expect);
 
@@ -49,6 +49,26 @@ describe('product CRUD', function () {
 
       expect(response).toSatisfyApiSpec();
 
+      expectResponseStatus(response, 201);
+      const { id, ...rest } = response.body;
+
+      expect(id).toMatch(/^[0-9a-f-]{36}$/i);
+      expect(rest).toEqual(payload);
+    });
+
+    it('given every optional field is set, returns them all back exactly as provided (full round trip)', async function () {
+      const payload = buildProductInput({
+        description: 'Ortho imagery of Tel Aviv',
+        bounding_polygon: telAvivPolygon(),
+        consumption_link: 'https://example.com/wms',
+        resolution_best: 0.5,
+        min_zoom: 0,
+        max_zoom: 18,
+      });
+
+      const response = await requestSender.createProduct({ requestBody: payload });
+
+      expect(response).toSatisfyApiSpec();
       expectResponseStatus(response, 201);
       const { id, ...rest } = response.body;
 

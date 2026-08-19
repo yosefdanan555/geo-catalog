@@ -5,3 +5,4 @@ coverage/
 minikube-linux-amd64
 *.bak
 helm/deploy.sh
+.idea/
