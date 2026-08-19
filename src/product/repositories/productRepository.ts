@@ -1,3 +1,6 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import yaml from 'js-yaml';
 import { inject, injectable } from 'tsyringe';
 import type { Knex } from 'knex';
 import { SERVICES } from '@common/constants';
@@ -11,7 +14,21 @@ import { NumberFilter, Product, ProductInput, ProductRow, ProductSearchFilters }
 
 const TABLE = 'products';
 
-const COLUMNS = ['id', 'name', 'description', 'consumption_link', 'type', 'consumption_protocol', 'resolution_best', 'min_zoom', 'max_zoom'] as const;
+// 1. Define a strict interface for the slice of the OpenAPI document we need
+interface OpenApiSchema {
+  components: {
+    schemas: {
+      productCreate: {
+        properties: Record<string, unknown>;
+      };
+    };
+  };
+}
+
+// eslint-disable-next-line import-x/no-named-as-default-member
+const openApiDoc = yaml.load(fs.readFileSync(path.join(__dirname, '../../openapi3.yaml'), 'utf8')) as OpenApiSchema;
+const productCreateProps = openApiDoc.components.schemas.productCreate.properties;
+const COLUMNS = ['id', ...Object.keys(productCreateProps).filter((key) => key !== 'bounding_polygon')] as (keyof ProductRow)[];
 
 function toApiProduct(row: ProductRow): Product {
   const product: Product = {
