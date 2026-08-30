@@ -1,3 +1,8 @@
+import fs from 'node:fs';
+import path from 'node:path';
+// js-yaml v5 ships an ESM build with named exports only (no default), so a default
+// import resolves to undefined under vitest even though tsc's CJS interop papers over it.
+import { load as loadYaml } from 'js-yaml';
 import { inject, injectable } from 'tsyringe';
 import type { Knex } from 'knex';
 import { SERVICES } from '@common/constants';
@@ -11,7 +16,24 @@ import { NumberFilter, Product, ProductInput, ProductRow, ProductSearchFilters }
 
 const TABLE = 'products';
 
-const COLUMNS = ['id', 'name', 'description', 'consumption_link', 'type', 'consumption_protocol', 'resolution_best', 'min_zoom', 'max_zoom'] as const;
+// 1. Define a strict interface for the slice of the OpenAPI document we need
+interface OpenApiSchema {
+  components: {
+    schemas: {
+      productCreate: {
+        properties: Record<string, unknown>;
+      };
+    };
+  };
+}
+
+// Resolved from the working directory, not this file's location: that finds the
+// repo-root spec when running from source (tests, tsx) and the copied one in
+// `dist/` when running the built app, matching how `openapiConfig.filePath`
+// (./openapi3.yaml) and common/db/dbConfig.ts already resolve their files.
+const openApiDoc = loadYaml(fs.readFileSync(path.join(process.cwd(), 'openapi3.yaml'), 'utf8')) as OpenApiSchema;
+const productCreateProps = openApiDoc.components.schemas.productCreate.properties;
+const COLUMNS = ['id', ...Object.keys(productCreateProps).filter((key) => key !== 'bounding_polygon')] as (keyof ProductRow)[];
 
 function toApiProduct(row: ProductRow): Product {
   const product: Product = {

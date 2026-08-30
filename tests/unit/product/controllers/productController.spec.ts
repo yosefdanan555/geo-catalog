@@ -51,6 +51,7 @@ let manager: {
   search: ReturnType<typeof vi.fn>;
 };
 let controller: ProductController;
+let registry: Registry;
 let next: NextFunction & ReturnType<typeof vi.fn>;
 
 describe('ProductController', () => {
@@ -64,7 +65,8 @@ describe('ProductController', () => {
     };
     next = vi.fn() as typeof next;
     // Fresh Registry per test: prom-client throws if the same metric name is registered twice on one registry.
-    controller = new ProductController(await jsLogger({ enabled: false }), manager as unknown as ProductManager, new Registry());
+    registry = new Registry();
+    controller = new ProductController(await jsLogger({ enabled: false }), manager as unknown as ProductManager, registry);
   });
 
   describe('#createProduct', () => {
@@ -187,6 +189,70 @@ describe('ProductController', () => {
       await invoke(controller.deleteProduct, { params: { id: 'missing' } }, res, next);
 
       expect(next).toHaveBeenCalledWith(error);
+    });
+  });
+
+  describe('metrics', () => {
+    /** Reads one labelled sample straight off the registry the controller registered against. */
+    async function counterValue(operation: string, outcome: string): Promise<number | undefined> {
+      const metric = await registry.getSingleMetric('product_operations_total')?.get();
+      return metric?.values.find((sample) => sample.labels.operation === operation && sample.labels.outcome === outcome)?.value;
+    }
+
+    /**
+     * A histogram reports one series per bucket plus a sum and a count. Buckets are
+     * cumulative, so the `+Inf` one holds every observation for that label set —
+     * and unlike the `_count` series it is reachable through typed labels.
+     */
+    async function durationCount(operation: string, outcome: string): Promise<number | undefined> {
+      const metric = await registry.getSingleMetric('product_operation_duration_seconds')?.get();
+      return metric?.values.find(
+        (sample) => sample.labels.le === '+Inf' && sample.labels.operation === operation && sample.labels.outcome === outcome
+      )?.value;
+    }
+
+    it('counts a successful action and records its duration under that operation', async () => {
+      manager.getById.mockResolvedValue({ id: 'some-id' });
+
+      await invoke(controller.getProductById, { params: { id: 'some-id' } }, buildRes(), next);
+
+      await expect(counterValue('getById', 'success')).resolves.toBe(1);
+      await expect(durationCount('getById', 'success')).resolves.toBe(1);
+      await expect(counterValue('getById', 'failure')).resolves.toBeUndefined();
+    });
+
+    it('counts a thrown action as a failure and still records its duration', async () => {
+      manager.search.mockRejectedValue(new Error('boom'));
+
+      await invoke(controller.searchProducts, { query: {} }, buildRes(), next);
+
+      await expect(counterValue('search', 'failure')).resolves.toBe(1);
+      await expect(durationCount('search', 'failure')).resolves.toBe(1);
+      await expect(counterValue('search', 'success')).resolves.toBeUndefined();
+    });
+
+    it('keeps each action on its own operation label', async () => {
+      const input = buildProductInput();
+      manager.create.mockResolvedValue({ ...input, id: 'some-id' });
+      manager.remove.mockResolvedValue(undefined);
+
+      await invoke(controller.createProduct, { body: input }, buildRes(), next);
+      await invoke(controller.createProduct, { body: input }, buildRes(), next);
+      await invoke(controller.deleteProduct, { params: { id: 'some-id' } }, buildRes(), next);
+
+      await expect(counterValue('create', 'success')).resolves.toBe(2);
+      await expect(counterValue('delete', 'success')).resolves.toBe(1);
+      await expect(counterValue('update', 'success')).resolves.toBeUndefined();
+    });
+
+    it('still increments the standalone created_product counter', async () => {
+      const input = buildProductInput();
+      manager.create.mockResolvedValue({ ...input, id: 'some-id' });
+
+      await invoke(controller.createProduct, { body: input }, buildRes(), next);
+
+      const metric = await registry.getSingleMetric('created_product')?.get();
+      expect(metric?.values[0]?.value).toBe(1);
     });
   });
 });

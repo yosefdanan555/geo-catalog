@@ -1,8 +1,8 @@
 import type { Logger } from '@map-colonies/js-logger';
 import { inject, injectable } from 'tsyringe';
 import { SERVICES } from '@common/constants';
-import { BadRequestError } from '@common/errors/badRequestError';
-import { NotFoundError } from '@common/errors/notFoundError';
+import { BadRequestError, NotFoundError } from '@common/errors';
+
 import { ProductRepository } from '../repositories/productRepository';
 import { Product, ProductInput, ProductSearchFilters } from './product';
 

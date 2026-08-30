@@ -27,10 +27,8 @@ src/
     tracing.ts
     errors/                     # AppError hierarchy -> HTTP status codes (picked up by error-express-handler)
     db/
-      dbConfig.ts                # DB connection config (config/*.json's "db" key) — outside @map-colonies/config; this service's own contract
       createConnection.ts         # knex instance, DI-registered as a cached singleton (SERVICES.DB_CONNECTION)
-      migrate.ts                  # CLI: `tsx src/common/db/migrate.ts latest|rollback`
-      migrations/
+      schema.ts                   # idempotent schema bootstrap, applied by getApp() on every start
   product/                     # one business resource, 3 tiers top-to-bottom:
     routes/productRouter.ts      #   entry-point: HTTP routes -> controller (DI factory)
     controllers/productController.ts #   entry-point: req/res glue using generated TypedRequestHandlers, no business logic
@@ -38,7 +36,7 @@ src/
     models/product.ts             #   domain types (ProductInput/Product/ProductSearchFilters/ProductRow)
     repositories/productRepository.ts #   data-access: knex/SQL + DB row <-> API shape mapping, no rules
 tests/
-  configurations/               # vitest setup files + globalSetup (brings up the test DB, runs migrations)
+  configurations/               # vitest setup files + globalSetup (brings up the test DB container)
   integration/                  # one folder per resource/concern, real Postgres, real HTTP (via @map-colonies/openapi-supertest)
   unit/                         # manager-level unit tests with a stubbed repository
   factories/                    # test data builders
@@ -64,8 +62,8 @@ helm/api/                      # generic chart: Deployment + Service + HPA + Ing
   everything the boilerplate itself defines (server port, telemetry, OpenAPI
   paths) via `@map-colonies/config` and `commonBoilerplateV3`. The Postgres
   connection is this service's own concern (the boilerplate has no DB story), so
-  it stays in `common/db/dbConfig.ts`, validated separately with `zod` and read
-  straight from `config/*.json`'s `db` key — see [Databases](#databases).
+  it rides along as an extra `db` key in `config/*.json`, typed by
+  `AdditionalConfig` rather than by the schema — see [Databases](#databases).
 - **Generated request/response types** — `src/openapi.d.ts` is generated from
   `openapi3.yaml` (`npm run generate:openapi-types`, also a `prebuild` step) via
   `@map-colonies/openapi-generators`; controllers implement
@@ -107,9 +105,12 @@ The connection is configured exactly one way — discrete `host`/`port`/
 
 Same node-config-style layering as the rest of `config/` (`default.json`
 always applies, `{NODE_ENV}.json` layers on top — see
-`src/common/db/dbConfig.ts`), read directly rather than through
-`@map-colonies/config`'s `commonBoilerplateV3` schema, which knows nothing
-about this service's DB. No `DATABASE_URL`/env var alternative — a real
+`src/common/config.ts`). The `db` key isn't part of `@map-colonies/config`'s
+`commonBoilerplateV3` schema, which knows nothing about this service's DB, but
+the library carries extra keys through rather than stripping them — so
+`config.get('db.host')` resolves like any other setting, and the
+`AdditionalConfig` interface declares the shape so those reads are typed rather
+than `undefined`. No `DATABASE_URL`/env var alternative — a real
 production deployment supplies `config/production.json` however it supplies
 its other config (baked into the image, or overlaid at deploy time — see
 [Kubernetes / Helm](#kubernetes--helm)).
@@ -129,12 +130,19 @@ npm run start:dev            # http://localhost:8080 (config/default.json's serv
 npm run build && npm start
 ```
 
-Migrations aren't run automatically by any of the above — apply them yourself
-first:
+There is no separate migration step to run first. `getApp()` calls
+`ensureSchema()` (`src/common/db/schema.ts`) on every start, which creates the
+PostGIS/pgcrypto extensions, the two enum types, the `products` table and its
+GiST index — each guarded so that starting against an already-provisioned
+database does nothing. It runs inside a transaction holding a
+`pg_advisory_xact_lock`, so several replicas starting at once serialize instead
+of racing each other's `CREATE`s.
 
-```bash
-npm run db:migrate           # NODE_ENV=development, i.e. against config/default.json's "db" key
-```
+The trade-off is deliberate: there is no migration history and no `down` path,
+so an **additive** change (a new nullable column, another index) is just an
+edit to `schema.ts`, while anything destructive — dropping or retyping a column,
+backfilling — has to be handled out-of-band, since existing databases will
+already have the old shape.
 
 ## Testing
 
@@ -146,9 +154,12 @@ npm run test:integration     # full HTTP surface against a real Postgres+PostGIS
 
 `npm run test:integration`'s Vitest `globalSetup` (`tests/configurations/globalSetup.ts`)
 brings up the isolated `postgres-test` container (idempotent; a no-op if it's
-already running) and applies migrations, so it's a single command with no
-manual step. `npm run test:db:up` / `test:db:down` remain available if you want
-the container running for manual poking around outside of a test run.
+already running), so it's a single command with no manual step. The schema
+itself comes from the same `ensureSchema()` the server uses, since every test
+file builds its app through `getApp()` — the tests exercise the production
+bootstrap path rather than a test-only one. `npm run test:db:up` /
+`test:db:down` remain available if you want the container running for manual
+poking around outside of a test run.
 
 `npx tsc --noEmit` (or `npm run build`) type-checks the project. `npm run lint`
 runs ESLint (`@map-colonies/eslint-config`); `npm run lint:openapi` lints
@@ -156,6 +167,89 @@ runs ESLint (`@map-colonies/eslint-config`); `npm run lint:openapi` lints
 (`prettier.config.js`, reusing `@map-colonies/prettier-config` — single
 quotes, 150-char print width, es5 trailing commas; see `.prettierignore` for
 what's excluded and why).
+
+## Metrics
+
+Prometheus metrics are exposed at **`GET /metrics`** on the same port as the
+API — `collectMetricsExpressMiddleware` (`@map-colonies/prometheus`) registers
+that route in `serverBuilder.ts`, and it's excluded from the access log so
+scrapes don't drown out real traffic.
+
+Alongside the default Node/process metrics and the middleware's per-route
+`http_request_duration_seconds`, the product actions are instrumented in
+`productController.ts`:
+
+| Metric                               | Type      | Labels                 | What it tells you                                     |
+| ------------------------------------ | --------- | ---------------------- | ----------------------------------------------------- |
+| `product_operations_total`           | counter   | `operation`, `outcome` | How many product actions ran, and how many failed     |
+| `product_operation_duration_seconds` | histogram | `operation`, `outcome` | How long each action spent in the domain layer        |
+| `created_product`                    | counter   | —                      | Products created (kept from the original boilerplate) |
+
+`operation` is one of `create`, `search`, `getById`, `update`, `delete`.
+`outcome` is `success` or `failure`, where failure covers anything the manager
+throws — a `BadRequestError` from WKT validation as much as a database outage —
+so the ratio between the two is a usable error rate. Note these count actions
+that _reached_ the controller: a request rejected earlier by the OpenAPI
+validator (an unknown query param, a malformed body) shows up in
+`http_request_duration_seconds` with a 400 but never in `product_operations_total`.
+
+### Seeing them in local dev
+
+Start the service and the database, make a few requests, then scrape:
+
+```bash
+npm run test:db:up           # or point config/default.json's "db" at your own Postgres
+npm run start:dev
+
+# the service listens on config/default.json's server.port
+PORT=$(node -p "require('./config/default.json').server.port")
+
+# generate some traffic
+curl -X POST localhost:$PORT/product -H 'Content-Type: application/json' \
+  -d '{"name":"Demo","type":"raster","consumption_protocol":"WMS"}'
+curl localhost:$PORT/product
+curl localhost:$PORT/product/00000000-0000-0000-0000-000000000000   # a 404, to get outcome="failure"
+
+# read the product metrics back
+curl -s localhost:$PORT/metrics | grep '^product_'
+```
+
+which prints one series per action/outcome pair:
+
+```
+product_operations_total{operation="create",outcome="success",...} 1
+product_operations_total{operation="search",outcome="success",...} 1
+product_operations_total{operation="getById",outcome="failure",...} 1
+product_operation_duration_seconds_bucket{le="0.005",operation="create",outcome="success",...} 1
+...
+```
+
+`curl -s localhost:$PORT/metrics` on its own shows everything, including the
+per-route HTTP histogram and Node runtime metrics. To graph rather than read
+them, point a local Prometheus at the service — with the app on the host and
+Prometheus in Docker, `host.docker.internal` is the scrape target (substitute
+the same `server.port`):
+
+```yaml
+# prometheus.yml
+scrape_configs:
+  - job_name: geospatial-catalog
+    scrape_interval: 5s
+    static_configs:
+      - targets: ['host.docker.internal:8081']
+```
+
+```bash
+docker run --rm -p 9090:9090 \
+  --add-host host.docker.internal:host-gateway \
+  -v "$PWD/prometheus.yml:/etc/prometheus/prometheus.yml" \
+  prom/prometheus
+```
+
+Then open <http://localhost:9090> and try
+`sum by (operation) (rate(product_operations_total[1m]))`, or
+`histogram_quantile(0.95, sum by (le, operation) (rate(product_operation_duration_seconds_bucket[5m])))`
+for p95 latency per action.
 
 ## Git hooks
 
