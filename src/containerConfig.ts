@@ -18,25 +18,17 @@ export interface RegisterOptions {
   useChild?: boolean;
 }
 
-export const registerExternalValues = (options?: RegisterOptions): DependencyContainer => {
+export const registerExternalValues = async (options?: RegisterOptions): Promise<DependencyContainer> => {
+  const config = getConfig();
+
+  // jsLogger is async, so the logger has to be created before registration —
+  // tsyringe factories are synchronous and would otherwise hand out a Promise.
+  const loggerConfig = config.get('telemetry.logger');
+  const logger = await jsLogger({ ...loggerConfig, mixin: getOtelMixin() });
+
   const dependencies: InjectionObject<unknown>[] = [
-    { token: SERVICES.CONFIG, provider: { useValue: getConfig() } },
-    {
-      token: SERVICES.LOGGER,
-      provider: {
-        useFactory: instancePerContainerCachingFactory(async (container) => {
-          const config = container.resolve<ConfigType>(SERVICES.CONFIG);
-          const loggerConfig = config.get('telemetry.logger');
-
-          return jsLogger({
-            ...loggerConfig,
-            prettyPrint: loggerConfig.prettyPrint,
-            mixin: getOtelMixin(),
-          });
-        }),
-      },
-    },
-
+    { token: SERVICES.CONFIG, provider: { useValue: config } },
+    { token: SERVICES.LOGGER, provider: { useValue: logger } },
     {
       token: SERVICES.TRACER,
       provider: {
@@ -50,8 +42,8 @@ export const registerExternalValues = (options?: RegisterOptions): DependencyCon
       provider: {
         useFactory: instancePerContainerCachingFactory((container) => {
           const metricsRegistry = new Registry();
-          const config = container.resolve<ConfigType>(SERVICES.CONFIG);
-          config.initializeMetrics(metricsRegistry);
+          const registeredConfig = container.resolve<ConfigType>(SERVICES.CONFIG);
+          registeredConfig.initializeMetrics(metricsRegistry);
           return metricsRegistry;
         }),
       },

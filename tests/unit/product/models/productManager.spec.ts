@@ -2,8 +2,7 @@ import { jsLogger } from '@map-colonies/js-logger';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ProductManager } from '@src/product/models/productManager';
 import type { ProductRepository } from '@src/product/repositories/productRepository';
-import { BadRequestError } from '@common/errors/badRequestError';
-import { NotFoundError } from '@common/errors/notFoundError';
+import { BadRequestError, NotFoundError } from '@common/errors';
 import { buildProductInput } from '@tests/factories/product.factory';
 
 let repository: {
