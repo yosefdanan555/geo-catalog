@@ -13,6 +13,7 @@ afterEach(() => {
   process.argv = ORIGINAL_ARGV;
   process.exitCode = undefined;
   vi.doUnmock('knex');
+  vi.doUnmock('@common/config');
   vi.doUnmock('@common/db/createConnection');
   vi.restoreAllMocks();
   vi.resetModules();
@@ -30,6 +31,9 @@ function mockKnex(overrides: Partial<Pick<KnexMocks, 'latest' | 'rollback'>> = {
   const rollback = overrides.rollback ?? vi.fn().mockResolvedValue([1, ['20260813120000_create_products_table.js']]);
 
   vi.doMock('knex', () => ({ default: vi.fn().mockReturnValue({ migrate: { latest, rollback }, destroy }) }));
+  // The script initializes config itself before building a connection; stubbed so the
+  // test never reaches @map-colonies/config's real (network-capable) resolution.
+  vi.doMock('@common/config', () => ({ initConfig: vi.fn().mockResolvedValue(undefined) }));
   vi.doMock('@common/db/createConnection', () => ({ createConnectionOptions: () => ({}) }));
 
   return { latest, rollback, destroy };

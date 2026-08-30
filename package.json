@@ -27,6 +27,10 @@
     "generate:openapi-types": "openapi-generators generate types ./openapi3.yaml ./src/openapi.d.ts --format --add-typed-request-handler",
     "test:db:up": "docker compose up -d postgres-test",
     "test:db:down": "docker compose down",
+    "db:migrate": "cross-env NODE_ENV=development CONFIG_OFFLINE_MODE=true tsx src/common/db/migrate.ts latest",
+    "db:migrate:rollback": "cross-env NODE_ENV=development CONFIG_OFFLINE_MODE=true tsx src/common/db/migrate.ts rollback",
+    "test:migrate": "cross-env NODE_ENV=test CONFIG_OFFLINE_MODE=true tsx src/common/db/migrate.ts latest",
+    "test:migrate:rollback": "cross-env NODE_ENV=test CONFIG_OFFLINE_MODE=true tsx src/common/db/migrate.ts rollback",
     "docker:build": "docker build -t geospatial-catalog-service:latest .",
     "prepare": "node .husky/install.mjs"
   },

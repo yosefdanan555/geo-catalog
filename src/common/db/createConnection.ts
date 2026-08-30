@@ -1,21 +1,24 @@
 import 'reflect-metadata';
-
 import path from 'node:path';
 import knex, { type Knex } from 'knex';
-import type { DependencyContainer, FactoryFunction } from 'tsyringe';
-import { SERVICES } from '@common/constants';
-import type { ConfigType } from '../config';
+import type { FactoryFunction } from 'tsyringe';
+import { getConfig } from '@common/config';
 
 const MIN_POOL_SIZE = 0;
 const MAX_POOL_SIZE = 10;
 
-function createConnectionOptions(container: DependencyContainer): Knex.Config {
-  const config = container.resolve<ConfigType>(SERVICES.CONFIG);
+function createConnectionOptions(): Knex.Config {
+  const config = getConfig();
 
   return {
     client: 'pg',
     connection: {
-      ...config.db,
+      host: config.get('db.host'),
+      port: config.get('db.port'),
+      user: config.get('db.username'),
+      password: config.get('db.password'),
+      database: config.get('db.database'),
+      application_name: config.get('db.application_name'),
     },
     migrations: {
       directory: path.join(__dirname, 'migrations'),
@@ -24,8 +27,8 @@ function createConnectionOptions(container: DependencyContainer): Knex.Config {
   };
 }
 
-const dbConnectionFactory: FactoryFunction<Knex> = (container) => {
-  return knex(createConnectionOptions(container));
+const dbConnectionFactory: FactoryFunction<Knex> = () => {
+  return knex(createConnectionOptions());
 };
 
 export { createConnectionOptions, dbConnectionFactory };

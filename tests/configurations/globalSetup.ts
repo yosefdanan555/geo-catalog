@@ -19,6 +19,11 @@ export async function setup(): Promise<void> {
   execSync('docker compose up -d --wait postgres-test', { cwd: projectRoot, stdio: 'inherit' });
 
   const { default: knex } = await import('knex');
+  // createConnectionOptions() reads the db section off the shared config instance,
+  // and this setup runs in its own process, so it has to initialize config itself.
+  const { initConfig } = await import('../../src/common/config.js');
+  await initConfig(true);
+
   const { createConnectionOptions } = await import('../../src/common/db/createConnection.js');
   const db = knex(createConnectionOptions());
   await db.migrate.latest();

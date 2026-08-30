@@ -7,10 +7,6 @@ import { SERVICES } from '@common/constants';
 import { ProductManager } from '../models/productManager';
 import type { ProductSearchFilters } from '../models/product';
 
-/**
- * Entry-points layer: translates HTTP <-> domain calls. No business rules live
- * here (e.g. "does this id exist?") — that's ProductManager's job.
- */
 @injectable()
 export class ProductController {
   private readonly createdProductCounter: Counter;
@@ -29,8 +25,6 @@ export class ProductController {
 
   public createProduct: TypedRequestHandlers['createProduct'] = async (req, res, next) => {
     try {
-      // Body shape (required fields, enums, maxLength) is already enforced by the
-      // OpenAPI request validator middleware before this handler ever runs.
       const product = await this.manager.create(req.body);
       this.createdProductCounter.inc(1);
       return res.status(httpStatus.CREATED).json(product);
@@ -41,7 +35,6 @@ export class ProductController {
 
   public searchProducts: TypedRequestHandlers['searchProducts'] = async (req, res, next) => {
     try {
-      // Numeric query params are coerced to numbers by the OpenAPI validator.
       const products = await this.manager.search(req.query as unknown as ProductSearchFilters);
       return res.status(httpStatus.OK).json(products);
     } catch (error) {

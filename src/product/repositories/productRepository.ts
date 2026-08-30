@@ -1,6 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import yaml from 'js-yaml';
+// js-yaml v5 ships an ESM build with named exports only (no default), so a default
+// import resolves to undefined under vitest even though tsc's CJS interop papers over it.
+import { load as loadYaml } from 'js-yaml';
 import { inject, injectable } from 'tsyringe';
 import type { Knex } from 'knex';
 import { SERVICES } from '@common/constants';
@@ -25,8 +27,11 @@ interface OpenApiSchema {
   };
 }
 
-// eslint-disable-next-line import-x/no-named-as-default-member
-const openApiDoc = yaml.load(fs.readFileSync(path.join(__dirname, '../../openapi3.yaml'), 'utf8')) as OpenApiSchema;
+// Resolved from the working directory, not this file's location: that finds the
+// repo-root spec when running from source (tests, tsx) and the copied one in
+// `dist/` when running the built app, matching how `openapiConfig.filePath`
+// (./openapi3.yaml) and common/db/dbConfig.ts already resolve their files.
+const openApiDoc = loadYaml(fs.readFileSync(path.join(process.cwd(), 'openapi3.yaml'), 'utf8')) as OpenApiSchema;
 const productCreateProps = openApiDoc.components.schemas.productCreate.properties;
 const COLUMNS = ['id', ...Object.keys(productCreateProps).filter((key) => key !== 'bounding_polygon')] as (keyof ProductRow)[];
 
