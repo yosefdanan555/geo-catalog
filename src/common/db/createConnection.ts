@@ -1,5 +1,4 @@
 import 'reflect-metadata';
-import path from 'node:path';
 import knex, { type Knex } from 'knex';
 import type { FactoryFunction } from 'tsyringe';
 import { getConfig } from '@common/config';
@@ -19,9 +18,6 @@ function createConnectionOptions(): Knex.Config {
       password: config.get('db.password'),
       database: config.get('db.database'),
       application_name: config.get('db.application_name'),
-    },
-    migrations: {
-      directory: path.join(__dirname, 'migrations'),
     },
     pool: { min: MIN_POOL_SIZE, max: MAX_POOL_SIZE },
   };
