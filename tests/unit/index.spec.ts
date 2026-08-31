@@ -1,20 +1,20 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { SERVICES } from '@common/constants';
 
-afterEach(() => {
-  vi.doUnmock('@src/app');
-  vi.doUnmock('node:http');
-  vi.doUnmock('@godaddy/terminus');
-  vi.restoreAllMocks();
-  vi.resetModules();
-});
-
 async function flushMicrotasks(): Promise<void> {
   await new Promise((resolve) => setImmediate(resolve));
   await new Promise((resolve) => setImmediate(resolve));
 }
 
 describe('index bootstrap', () => {
+  afterEach(() => {
+    vi.doUnmock('@src/app');
+    vi.doUnmock('node:http');
+    vi.doUnmock('@godaddy/terminus');
+    vi.restoreAllMocks();
+    vi.resetModules();
+  });
+
   it('should builds the app, wires terminus with the resolved onSignal, and starts listening on the configured port', async () => {
     const logger = { info: vi.fn() };
     const config = { get: vi.fn().mockReturnValue(4000) };

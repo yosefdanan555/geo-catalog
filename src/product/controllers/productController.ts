@@ -15,7 +15,7 @@ const OPERATION_LABELS = ['operation', 'outcome'] as const;
 const DURATION_BUCKETS_SECONDS = [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5];
 
 @injectable()
-class ProductController {
+export class ProductController {
   private readonly createdProductCounter: Counter;
   private readonly operationCounter: Counter<(typeof OPERATION_LABELS)[number]>;
   private readonly operationDuration: Histogram<(typeof OPERATION_LABELS)[number]>;
@@ -45,21 +45,6 @@ class ProductController {
       buckets: DURATION_BUCKETS_SECONDS,
       registers: [this.metricsRegistry],
     });
-  }
-
-  private async track<T>(operation: ProductOperation, action: () => Promise<T>): Promise<T> {
-    const stopTimer = this.operationDuration.startTimer({ operation });
-
-    try {
-      const result = await action();
-      this.operationCounter.inc({ operation, outcome: 'success' });
-      stopTimer({ outcome: 'success' });
-      return result;
-    } catch (error) {
-      this.operationCounter.inc({ operation, outcome: 'failure' });
-      stopTimer({ outcome: 'failure' });
-      throw error;
-    }
   }
 
   public createProduct: TypedRequestHandlers['createProduct'] = async (req, res, next) => {
@@ -107,6 +92,19 @@ class ProductController {
       return next(error);
     }
   };
-}
 
-export default ProductController;
+  private async track<T>(operation: ProductOperation, action: () => Promise<T>): Promise<T> {
+    const stopTimer = this.operationDuration.startTimer({ operation });
+
+    try {
+      const result = await action();
+      this.operationCounter.inc({ operation, outcome: 'success' });
+      stopTimer({ outcome: 'success' });
+      return result;
+    } catch (error) {
+      this.operationCounter.inc({ operation, outcome: 'failure' });
+      stopTimer({ outcome: 'failure' });
+      throw error;
+    }
+  }
+}

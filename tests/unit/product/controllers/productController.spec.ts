@@ -3,7 +3,7 @@ import { jsLogger } from '@map-colonies/js-logger';
 import { Registry } from 'prom-client';
 import httpStatus from 'http-status-codes';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import ProductController from '@src/product/controllers/productController';
+import { ProductController } from '@src/product/controllers/productController';
 import type { ProductManager } from '@src/product/models/productManager';
 import { buildProductInput } from '@tests/factories/product.factory';
 

@@ -31,7 +31,7 @@ describe('unmatched routes', function () {
     await db.destroy();
   });
 
-  it('a route matching no router at all (an unknown docs sub-path) falls through to a JSON 404', async function () {
+  it('should fall through to a JSON 404 when a route matches no router at all (an unknown docs sub-path)', async function () {
     // Anything under /product is validated (and 404'd) by express-openapi-validator itself before
     // it can reach this fallback; the docs viewer is mounted un-validated, so an unknown sub-path
     // under it is what actually reaches the app's own catch-all "not found" handler.

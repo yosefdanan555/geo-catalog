@@ -32,7 +32,7 @@ export const registerExternalValues = async (options?: RegisterOptions): Promise
     {
       token: SERVICES.TRACER,
       provider: {
-        useFactory: instancePerContainerCachingFactory((_) => {
+        useFactory: instancePerContainerCachingFactory(() => {
           return trace.getTracer(SERVICE_NAME);
         }),
       },
