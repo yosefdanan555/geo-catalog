@@ -1,31 +1,14 @@
 {
+  "extends": "@map-colonies/tsconfig/tsconfig-app",
   "compilerOptions": {
-    // File Layout
-    "rootDir": "./src",
-    "outDir": "./dist",
-
-    // Environment Settings
-    "module": "CommonJS",
-    "target": "ES2022",
-    "lib": ["ES2022"],
-    "esModuleInterop": true,
-
-    // Other Outputs
-    "sourceMap": true,
-    "declaration": false,
-
-    // Stricter Typechecking Options
-    "noUncheckedIndexedAccess": true,
-    "exactOptionalPropertyTypes": true,
-
-    // Recommended Options
-    "strict": true,
-    "forceConsistentCasingInFileNames": true,
-    "isolatedModules": true,
-    "noUncheckedSideEffectImports": true,
-    "moduleDetection": "force",
-    "skipLibCheck": true,
-    "resolveJsonModule": true
+    "baseUrl": ".",
+    "paths": {
+      "@src/*": ["src/*"],
+      "@tests/*": ["tests/*"],
+      "@common/*": ["src/common/*"],
+      "@openapi": ["src/openapi"]
+    }
   },
-  "include": ["src/**/*.ts"]
+  "include": ["src", "tests"],
+  "exclude": ["node_modules", "dist"]
 }

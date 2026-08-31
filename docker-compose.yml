@@ -1,24 +1,15 @@
 services:
-  # Dev database: intentionally NOT defined here. This project runs against the
-  # Postgres+PostGIS container from Part 1 of the exercise (container `my-postgis`,
-  # already listening on localhost:5432 with the `spatial_db` database and seed
-  # data). See .env. If you need to recreate it, use the postgis/postgis:16-3.4
-  # image with POSTGRES_USER=admin, POSTGRES_PASSWORD=secret, POSTGRES_DB=spatial_db.
-
-  # Test database: fully isolated, ephemeral (tmpfs-backed), on its own port, so
-  # `npm test` never touches dev/Part-1 data and can run concurrently with `npm run dev`.
   postgres-test:
     image: postgis/postgis:16-3.4
+    container_name: postgres
     environment:
       POSTGRES_USER: catalog
       POSTGRES_PASSWORD: catalog
       POSTGRES_DB: catalog_test
     ports:
-      - '5433:5432'
+      - '5432:5432'
     tmpfs:
       - /var/lib/postgresql/data
-    # Durability we'd never accept in prod is free speed here: data lives on tmpfs
-    # anyway (wiped on container restart), so there's nothing fsync/WAL would protect.
     command:
       - postgres
       - -c
@@ -32,3 +23,23 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - '9090:9090'
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - '3000:3000'
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    depends_on:
+      - prometheus

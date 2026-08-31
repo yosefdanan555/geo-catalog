@@ -10,34 +10,14 @@ fullnameOverride: ""
 
 service:
   type: ClusterIP
-  port: 3000
-  targetPort: 3000
+  port: 8080
+  targetPort: 8080
 
-# Plain pass-through env vars — as generic/free-form as a Deployment's own `env`.
-#
-# The DB password is no longer a plaintext value here — it's read live from the
-# `helm/postgresql` release's own Secret (test-catalog-db-postgresql, key
-# postgres-password), so there's nothing to keep in sync by hand anymore.
-# (A bare `envFrom: [{secretRef: {name: test-catalog-db-postgresql}}]` would
-# dump that secret's keys in verbatim as `postgres-password` etc. — not a name
-# this app reads — so the password is pulled in as its own named `env` entry
-# via secretKeyRef instead, same idea, just renamed to something DB_PASSWORD.)
 env:
   - name: NODE_ENV
     value: production
-  - name: DB_HOST
-    value: test-catalog-db-postgresql
-  - name: DB_PORT
-    value: "5432"
-  - name: DB_USER
-    value: postgres
-  - name: DB_NAME
-    value: spatial_db
-  - name: DB_PASSWORD
-    valueFrom:
-      secretKeyRef:
-        name: test-catalog-db-postgresql
-        key: postgres-password
+  - name: CONFIG_OFFLINE_MODE
+    value: "true"
 
 # Same idea, for envFrom (whole ConfigMaps/Secrets at once) — nothing needed
 # here for the DB (see above), but left available for anything else.
@@ -46,15 +26,15 @@ env:
 #       name: my-secret
 envFrom: []
 
+volumes: []
+volumeMounts: []
+
 probes:
-  path: /health
+  path: /liveness
   port: http
   initialDelaySeconds: 5
   periodSeconds: 10
 
-# HPA needs these to compute utilization %, so they're set by default rather
-# than left empty (an HPA against a container with no resource requests just
-# silently never scales).
 resources:
   requests:
     cpu: 100m
@@ -68,10 +48,8 @@ autoscaling:
   minReplicas: 1
   maxReplicas: 5
   targetCPUUtilizationPercentage: 80
-  # Leave empty to scale on CPU only.
   targetMemoryUtilizationPercentage: ""
 
-# Plain Kubernetes Ingress. Leave disabled and use `route` instead on OpenShift.
 ingress:
   enabled: false
   className: ""
@@ -82,13 +60,8 @@ ingress:
         - path: /
           pathType: Prefix
   tls: []
-  # tls:
-  #   - secretName: api-tls
-  #     hosts:
-  #       - api.example.local
 
-# OpenShift Route, as an alternative to `ingress` on clusters that don't run
-# an Ingress controller. Enable at most one of the two.
+
 route:
   enabled: true
   host: ""

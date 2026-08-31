@@ -1,0 +1,310 @@
+openapi: 3.0.3
+info:
+  title: geospatial-catalog-service
+  description: CRUD service for managing and querying geospatial products with advanced numerical and spatial filtering.
+  version: 1.0.0
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+paths:
+  /product:
+    post:
+      operationId: createProduct
+      tags:
+        - product
+      summary: Create a new product
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/productCreate'
+      responses:
+        '201':
+          description: Product created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/product'
+        '400':
+          description: Request body failed validation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+    get:
+      operationId: searchProducts
+      tags:
+        - product
+      summary: Search products
+      description: Query products using implicit AND logic for all provided filters.
+      parameters:
+        # String and Enum equality
+        - name: name
+          in: query
+          schema:
+            type: string
+        - name: type
+          in: query
+          schema:
+            $ref: '#/components/schemas/productType'
+        - name: consumption_protocol
+          in: query
+          schema:
+            $ref: '#/components/schemas/consumptionProtocol'
+
+        # Number filters: resolution_best
+        - name: resolution_best_eq
+          in: query
+          schema:
+            type: number
+        - name: resolution_best_gt
+          in: query
+          schema:
+            type: number
+        - name: resolution_best_gte
+          in: query
+          schema:
+            type: number
+        - name: resolution_best_lt
+          in: query
+          schema:
+            type: number
+        - name: resolution_best_lte
+          in: query
+          schema:
+            type: number
+
+        # Integer filters: min_zoom
+        - name: min_zoom_eq
+          in: query
+          schema:
+            type: integer
+        - name: min_zoom_gt
+          in: query
+          schema:
+            type: integer
+        - name: min_zoom_gte
+          in: query
+          schema:
+            type: integer
+        - name: min_zoom_lt
+          in: query
+          schema:
+            type: integer
+        - name: min_zoom_lte
+          in: query
+          schema:
+            type: integer
+
+        # Integer filters: max_zoom
+        - name: max_zoom_eq
+          in: query
+          schema:
+            type: integer
+        - name: max_zoom_gt
+          in: query
+          schema:
+            type: integer
+        - name: max_zoom_gte
+          in: query
+          schema:
+            type: integer
+        - name: max_zoom_lt
+          in: query
+          schema:
+            type: integer
+        - name: max_zoom_lte
+          in: query
+          schema:
+            type: integer
+
+        # Spatial filters (Expects EPSG:4326 WKT string)
+        - name: intersects
+          in: query
+          description: Returns products whose bounding polygon intersects with the provided WKT geometry.
+          schema:
+            type: string
+            example: 'POLYGON((34.0 32.0, 35.0 32.0, 35.0 33.0, 34.0 33.0, 34.0 32.0))'
+        - name: contains
+          in: query
+          description: Returns products whose bounding polygon completely contains the provided WKT geometry.
+          schema:
+            type: string
+            example: 'POINT(34.75 32.05)'
+        - name: within
+          in: query
+          description: Returns products whose bounding polygon is completely within the provided WKT geometry.
+          schema:
+            type: string
+            example: 'POLYGON((34.0 31.0, 36.0 31.0, 36.0 34.0, 34.0 34.0, 34.0 31.0))'
+      responses:
+        '200':
+          description: A list of products matching the criteria
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/product'
+        '400':
+          description: A query parameter failed validation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+  /product/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: getProductById
+      tags:
+        - product
+      summary: Get a product by ID
+      responses:
+        '200':
+          description: Product details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/product'
+        '404':
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+    put:
+      operationId: updateProduct
+      tags:
+        - product
+      summary: Update an existing product
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/productCreate'
+      responses:
+        '200':
+          description: Product updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/product'
+        '400':
+          description: Request body failed validation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        '404':
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+    delete:
+      operationId: deleteProduct
+      tags:
+        - product
+      summary: Delete a product
+      responses:
+        '204':
+          description: Product deleted successfully
+        '404':
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+security:
+  - {}
+components:
+  schemas:
+    error:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+        errors:
+          type: array
+          items:
+            type: object
+    productType:
+      type: string
+      enum:
+        - raster
+        - rasterized vector
+        - 3d tiles
+        - QMesh
+    consumptionProtocol:
+      type: string
+      enum:
+        - WMS
+        - WMTS
+        - XYZ
+        - 3D Tiles
+    geoJsonPolygon:
+      type: object
+      required:
+        - type
+        - coordinates
+      properties:
+        type:
+          type: string
+          enum: [Polygon]
+        coordinates:
+          type: array
+          items:
+            type: array
+            items:
+              type: array
+              items:
+                type: number
+              minItems: 2
+              maxItems: 2
+    productCreate:
+      type: object
+      required:
+        - name
+        - type
+        - consumption_protocol
+      properties:
+        name:
+          type: string
+          maxLength: 48
+        description:
+          type: string
+        bounding_polygon:
+          $ref: '#/components/schemas/geoJsonPolygon'
+        consumption_link:
+          type: string
+        type:
+          $ref: '#/components/schemas/productType'
+        consumption_protocol:
+          $ref: '#/components/schemas/consumptionProtocol'
+        resolution_best:
+          type: number
+          format: double
+        min_zoom:
+          type: integer
+        max_zoom:
+          type: integer
+    product:
+      allOf:
+        - $ref: '#/components/schemas/productCreate'
+        - type: object
+          required:
+            - id
+          properties:
+            id:
+              type: string
+              format: uuid

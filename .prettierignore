@@ -1,0 +1,19 @@
+node_modules
+dist
+coverage
+package-lock.json
+
+# Auto-generated — do not hand-format (npm run generate:openapi-types already
+# formats it, with its own generator's quote-style conventions).
+src/openapi.d.ts
+
+# Exported straight from the Postman app; reformatting on every export would
+# just be repo-diff noise.
+postman/*.json
+
+# Helm charts: vendored (postgresql) or Go-templated YAML that isn't valid
+# YAML on its own (the `{{ }}` template syntax breaks prettier's YAML parser)
+# — lint these with `helm lint`/`helm template` instead.
+helm
+
+*.bak
