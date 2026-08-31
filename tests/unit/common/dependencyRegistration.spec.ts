@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { registerDependencies, type InjectionObject } from '@common/dependencyRegistration';
 
 describe('registerDependencies', () => {
-  it('registers every dependency onto the default container when useChild is omitted', () => {
+  it('should registers every dependency onto the default container when useChild is omitted', () => {
     const token = Symbol('plain-value');
     const dependencies: InjectionObject<unknown>[] = [{ token, provider: { useValue: 'plain' } }];
 
@@ -14,7 +14,7 @@ describe('registerDependencies', () => {
     expect(container.resolve(token)).toBe('plain');
   });
 
-  it('registers onto an isolated child container when useChild is true', () => {
+  it('should registers onto an isolated child container when useChild is true', () => {
     const token = Symbol('child-value');
     const dependencies: InjectionObject<unknown>[] = [{ token, provider: { useValue: 'child' } }];
 
@@ -25,7 +25,7 @@ describe('registerDependencies', () => {
     expect(() => defaultContainer.resolve(token)).toThrow();
   });
 
-  it('uses the override provider instead of the original for a matching token', () => {
+  it('should uses the override provider instead of the original for a matching token', () => {
     const token = Symbol('overridden-value');
     const dependencies: InjectionObject<unknown>[] = [{ token, provider: { useValue: 'original' } }];
     const override: InjectionObject<unknown>[] = [{ token, provider: { useValue: 'overridden' } }];
@@ -35,7 +35,7 @@ describe('registerDependencies', () => {
     expect(container.resolve(token)).toBe('overridden');
   });
 
-  it('additionally registers an override token that was not in the original dependency list', () => {
+  it('should additionally registers an override token that was not in the original dependency list', () => {
     const originalToken = Symbol('kept-value');
     const extraToken = Symbol('extra-value');
     const dependencies: InjectionObject<unknown>[] = [{ token: originalToken, provider: { useValue: 'kept' } }];

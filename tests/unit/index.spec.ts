@@ -1,29 +1,21 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { SERVICES } from '@common/constants';
 
-/**
- * `src/index.ts` is the process entrypoint: it runs its bootstrap logic as a
- * top-level side effect on import (`void getApp().then(...).catch(...)`), so
- * every scenario mocks its three collaborators (`@src/app`, `node:http`,
- * `@godaddy/terminus`) before a fresh `import()`, then flushes microtasks to
- * let the internal `await`/`.then()` chain settle before asserting.
- */
-
-afterEach(() => {
-  vi.doUnmock('@src/app');
-  vi.doUnmock('node:http');
-  vi.doUnmock('@godaddy/terminus');
-  vi.restoreAllMocks();
-  vi.resetModules();
-});
-
 async function flushMicrotasks(): Promise<void> {
   await new Promise((resolve) => setImmediate(resolve));
   await new Promise((resolve) => setImmediate(resolve));
 }
 
 describe('index bootstrap', () => {
-  it('builds the app, wires terminus with the resolved onSignal, and starts listening on the configured port', async () => {
+  afterEach(() => {
+    vi.doUnmock('@src/app');
+    vi.doUnmock('node:http');
+    vi.doUnmock('@godaddy/terminus');
+    vi.restoreAllMocks();
+    vi.resetModules();
+  });
+
+  it('should builds the app, wires terminus with the resolved onSignal, and starts listening on the configured port', async () => {
     const logger = { info: vi.fn() };
     const config = { get: vi.fn().mockReturnValue(4000) };
     const onSignal = vi.fn();
@@ -57,12 +49,13 @@ describe('index bootstrap', () => {
       typeof httpServer,
       { onSignal: typeof onSignal; healthChecks: Record<string, () => Promise<void>> },
     ];
+
     expect(terminusTarget).toBe(httpServer);
     expect(options.onSignal).toBe(onSignal);
     await expect(options.healthChecks['/liveness']?.()).resolves.toBeUndefined();
   });
 
-  it('logs the error and exits with code 1 when initialization fails', async () => {
+  it('should logs the error and exits with code 1 when initialization fails', async () => {
     const initError = new Error('boom');
     vi.doMock('@src/app', () => ({ getApp: vi.fn().mockRejectedValue(initError) }));
     vi.doMock('node:http', () => ({ createServer: vi.fn() }));

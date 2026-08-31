@@ -8,7 +8,7 @@ import { SERVICES } from '@common/constants';
 import { tracingFactory } from '@common/tracing';
 
 describe('onSignal (graceful shutdown)', function () {
-  it('stops tracing and destroys the db connection', async function () {
+  it('should stop tracing and destroy the db connection', async function () {
     await initConfig(true);
     // `getTracing()` (used inside the real `onSignal`) throws unless tracing was set up first —
     // normally done once by the instrumentation entrypoint, which tests never load.

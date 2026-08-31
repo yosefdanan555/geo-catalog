@@ -7,7 +7,6 @@ import { SERVICES } from '@common/constants';
 import { ProductManager } from '../models/productManager';
 import type { ProductSearchFilters } from '../models/product';
 
-/** One label value per product action, used for both metrics below. */
 type ProductOperation = 'create' | 'search' | 'getById' | 'update' | 'delete';
 
 const OPERATION_LABELS = ['operation', 'outcome'] as const;
@@ -46,30 +45,6 @@ export class ProductController {
       buckets: DURATION_BUCKETS_SECONDS,
       registers: [this.metricsRegistry],
     });
-  }
-
-  /**
-   * Records one product action: how many ran, split by outcome, and how long they
-   * took. `outcome="failure"` covers anything the manager throws — a validation
-   * BadRequestError as much as a database outage — so the ratio between the two
-   * label values is a usable error rate.
-   *
-   * This measures the domain call only. Whole-request latency and HTTP status
-   * codes are already covered by the express middleware's `http_request_duration_seconds`.
-   */
-  private async track<T>(operation: ProductOperation, action: () => Promise<T>): Promise<T> {
-    const stopTimer = this.operationDuration.startTimer({ operation });
-
-    try {
-      const result = await action();
-      this.operationCounter.inc({ operation, outcome: 'success' });
-      stopTimer({ outcome: 'success' });
-      return result;
-    } catch (error) {
-      this.operationCounter.inc({ operation, outcome: 'failure' });
-      stopTimer({ outcome: 'failure' });
-      throw error;
-    }
   }
 
   public createProduct: TypedRequestHandlers['createProduct'] = async (req, res, next) => {
@@ -117,4 +92,19 @@ export class ProductController {
       return next(error);
     }
   };
+
+  private async track<T>(operation: ProductOperation, action: () => Promise<T>): Promise<T> {
+    const stopTimer = this.operationDuration.startTimer({ operation });
+
+    try {
+      const result = await action();
+      this.operationCounter.inc({ operation, outcome: 'success' });
+      stopTimer({ outcome: 'success' });
+      return result;
+    } catch (error) {
+      this.operationCounter.inc({ operation, outcome: 'failure' });
+      stopTimer({ outcome: 'failure' });
+      throw error;
+    }
+  }
 }

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 describe('config', () => {
-  it('getConfig throws before initConfig has been called', async () => {
+  it('should getConfig throws before initConfig has been called', async () => {
     vi.resetModules();
     // The .js extension (not this project's actual .ts source) matches the NodeNext-style
     // specifier TypeScript expects at this path — without it, the dynamic import's type can't
@@ -11,7 +11,7 @@ describe('config', () => {
     expect(() => getConfig()).toThrow('config not initialized');
   });
 
-  it('getConfig returns the instance initConfig set up (offline mode)', async () => {
+  it('should getConfig returns the instance initConfig set up (offline mode)', async () => {
     vi.resetModules();
     const { initConfig, getConfig } = await import('@common/config.js');
 

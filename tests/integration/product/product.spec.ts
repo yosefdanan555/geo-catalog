@@ -42,7 +42,7 @@ describe('product CRUD', function () {
   });
 
   describe('POST /product', function () {
-    it('given a valid payload, creates the product and returns it with a generated id', async function () {
+    it('should given a valid payload, creates the product and returns it with a generated id', async function () {
       const payload = buildProductInput({ description: 'Ortho imagery of Tel Aviv' });
 
       const response = await requestSender.createProduct({ requestBody: payload });
@@ -56,7 +56,7 @@ describe('product CRUD', function () {
       expect(rest).toEqual(payload);
     });
 
-    it('given every optional field is set, returns them all back exactly as provided (full round trip)', async function () {
+    it('should given every optional field is set, returns them all back exactly as provided (full round trip)', async function () {
       const payload = buildProductInput({
         description: 'Ortho imagery of Tel Aviv',
         bounding_polygon: telAvivPolygon(),
@@ -69,6 +69,7 @@ describe('product CRUD', function () {
       const response = await requestSender.createProduct({ requestBody: payload });
 
       expect(response).toSatisfyApiSpec();
+
       expectResponseStatus(response, 201);
       const { id, ...rest } = response.body;
 
@@ -76,7 +77,7 @@ describe('product CRUD', function () {
       expect(rest).toEqual(payload);
     });
 
-    it('given optional fields are omitted, the response omits them rather than returning null', async function () {
+    it('should given optional fields are omitted, the response omits them rather than returning null', async function () {
       const payload = buildProductInput();
 
       const response = await requestSender.createProduct({ requestBody: payload });
@@ -91,7 +92,7 @@ describe('product CRUD', function () {
       expect(response.body).not.toHaveProperty('resolution_best');
     });
 
-    it('given a body missing a required field, responds 400 and creates nothing', async function () {
+    it('should given a body missing a required field, responds 400 and creates nothing', async function () {
       const { type, ...payloadWithoutType } = buildProductInput();
 
       const response = await requestSender.createProduct({ requestBody: payloadWithoutType as unknown as ProductCreateBody });
@@ -102,7 +103,7 @@ describe('product CRUD', function () {
       await expect(countProducts(db)).resolves.toBe(0);
     });
 
-    it('given an invalid enum value, responds 400', async function () {
+    it('should given an invalid enum value, responds 400', async function () {
       const response = await requestSender.createProduct({
         requestBody: { ...buildProductInput(), type: 'not-a-real-type' } as unknown as ProductCreateBody,
       });
@@ -110,7 +111,7 @@ describe('product CRUD', function () {
       expectResponseStatus(response, 400);
     });
 
-    it('given a name longer than 48 characters, responds 400', async function () {
+    it('should given a name longer than 48 characters, responds 400', async function () {
       const response = await requestSender.createProduct({ requestBody: buildProductInput({ name: 'x'.repeat(49) }) });
 
       expectResponseStatus(response, 400);
@@ -118,7 +119,7 @@ describe('product CRUD', function () {
   });
 
   describe('GET /product/{id}', function () {
-    it('given an id that exists, returns that product', async function () {
+    it('should given an id that exists, returns that product', async function () {
       const created = await requestSender.createProduct({ requestBody: buildProductInput() });
       expectResponseStatus(created, 201);
 
@@ -129,7 +130,7 @@ describe('product CRUD', function () {
       expect(response.body).toEqual(created.body);
     });
 
-    it('given an id that does not exist, responds 404', async function () {
+    it('should given an id that does not exist, responds 404', async function () {
       const response = await requestSender.getProductById({ pathParams: { id: '00000000-0000-0000-0000-000000000000' } });
 
       expectResponseStatus(response, 404);
@@ -137,7 +138,7 @@ describe('product CRUD', function () {
   });
 
   describe('PUT /product/{id}', function () {
-    it('given a valid replacement, updates the product and persists it (verified via a fresh GET)', async function () {
+    it('should given a valid replacement, updates the product and persists it (verified via a fresh GET)', async function () {
       const created = await requestSender.createProduct({ requestBody: buildProductInput() });
       expectResponseStatus(created, 201);
       const replacement = buildProductInput({ name: 'Renamed Product', type: 'QMesh', consumption_protocol: 'XYZ' });
@@ -154,7 +155,7 @@ describe('product CRUD', function () {
       expect(getResponse.body).toEqual(updateResponse.body);
     });
 
-    it('given an id that does not exist, responds 404', async function () {
+    it('should given an id that does not exist, responds 404', async function () {
       const response = await requestSender.updateProduct({
         pathParams: { id: '00000000-0000-0000-0000-000000000000' },
         requestBody: buildProductInput(),
@@ -163,7 +164,7 @@ describe('product CRUD', function () {
       expectResponseStatus(response, 404);
     });
 
-    it('given a body missing a required field, responds 400 and leaves the existing product untouched', async function () {
+    it('should given a body missing a required field, responds 400 and leaves the existing product untouched', async function () {
       const created = await requestSender.createProduct({ requestBody: buildProductInput({ name: 'Original' }) });
       expectResponseStatus(created, 201);
       const { consumption_protocol: consumptionProtocol, ...payloadWithoutProtocol } = buildProductInput();
@@ -182,7 +183,7 @@ describe('product CRUD', function () {
   });
 
   describe('DELETE /product/{id}', function () {
-    it('given an id that exists, deletes it and it is no longer reachable', async function () {
+    it('should given an id that exists, deletes it and it is no longer reachable', async function () {
       const created = await requestSender.createProduct({ requestBody: buildProductInput() });
       expectResponseStatus(created, 201);
 
@@ -193,13 +194,13 @@ describe('product CRUD', function () {
       expectResponseStatus(getResponse, 404);
     });
 
-    it('given an id that does not exist, responds 404', async function () {
+    it('should given an id that does not exist, responds 404', async function () {
       const response = await requestSender.deleteProduct({ pathParams: { id: '00000000-0000-0000-0000-000000000000' } });
 
       expectResponseStatus(response, 404);
     });
 
-    it('deleting one product leaves unrelated products unaffected (no side effects)', async function () {
+    it('should deleting one product leaves unrelated products unaffected (no side effects)', async function () {
       const keep = await requestSender.createProduct({ requestBody: buildProductInput({ name: 'Keep Me' }) });
       expectResponseStatus(keep, 201);
       const remove = await requestSender.createProduct({ requestBody: buildProductInput({ name: 'Remove Me' }) });

@@ -45,7 +45,7 @@ describe('ServerBuilder', () => {
     return builder.build();
   }
 
-  it('mounts the injected router under /product', async () => {
+  it('should mounts the injected router under /product', async () => {
     const app = await build();
 
     const response = await agent(app).get('/product');
@@ -54,7 +54,7 @@ describe('ServerBuilder', () => {
     expect(response.body).toEqual({ probed: true });
   });
 
-  it('mounts the OpenAPI docs viewer at the configured base path', async () => {
+  it('should mounts the OpenAPI docs viewer at the configured base path', async () => {
     const app = await build();
 
     const response = await agent(app).get('/docs/api/');
@@ -63,7 +63,7 @@ describe('ServerBuilder', () => {
     expect(response.type).toBe('text/html');
   });
 
-  it('applies compression middleware when enabled', async () => {
+  it('should applies compression middleware when enabled', async () => {
     const app = await build({ 'server.response.compression.enabled': true });
 
     const response = await agent(app).get('/product');
@@ -71,7 +71,7 @@ describe('ServerBuilder', () => {
     expect(response.status).toBe(200);
   });
 
-  it('skips compression middleware when disabled', async () => {
+  it('should skips compression middleware when disabled', async () => {
     const app = await build({ 'server.response.compression.enabled': false });
 
     const response = await agent(app).get('/product');
@@ -79,7 +79,7 @@ describe('ServerBuilder', () => {
     expect(response.status).toBe(200);
   });
 
-  it('falls back to a JSON 404 for a route that matched no router (e.g. an unknown docs sub-path)', async () => {
+  it('should falls back to a JSON 404 for a route that matched no router (e.g. an unknown docs sub-path)', async () => {
     const app = await build();
 
     const response = await agent(app).get('/docs/does-not-exist');

@@ -17,8 +17,6 @@ type ConfigType = ConfigInstance<commonBoilerplateV3Type & AdditionalConfig>;
 let configInstance: ConfigType | undefined;
 
 async function initConfig(offlineMode?: boolean): Promise<void> {
-  // Widened to AdditionalConfig: the schema validates only the boilerplate
-  // sections, so `db` is carried through unvalidated and untyped without this.
   configInstance = (await config({
     schema: commonBoilerplateV3,
     offlineMode,
