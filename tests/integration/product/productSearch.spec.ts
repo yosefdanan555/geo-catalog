@@ -49,7 +49,7 @@ describe('GET /product (search)', function () {
   }
 
   describe('equality filters (strings and enums)', function () {
-    it('given ?name=X, returns only the product with that exact name', async function () {
+    it('should given ?name=X, returns only the product with that exact name', async function () {
       await createProduct({ name: 'Ortho 2024' });
       await createProduct({ name: 'Ortho 2023' });
 
@@ -60,7 +60,7 @@ describe('GET /product (search)', function () {
       expect(names(response)).toEqual(['Ortho 2024']);
     });
 
-    it('given ?type=X, returns only products of that type', async function () {
+    it('should given ?type=X, returns only products of that type', async function () {
       await createProduct({ type: 'raster' });
       await createProduct({ type: 'QMesh' });
 
@@ -72,7 +72,7 @@ describe('GET /product (search)', function () {
       expect(response.body[0]?.type).toBe('QMesh');
     });
 
-    it('given ?consumption_protocol=X, returns only products with that protocol', async function () {
+    it('should given ?consumption_protocol=X, returns only products with that protocol', async function () {
       await createProduct({ consumption_protocol: 'WMS' });
       await createProduct({ consumption_protocol: 'XYZ' });
 
@@ -92,42 +92,42 @@ describe('GET /product (search)', function () {
       await createProduct({ name: 'High Res', resolution_best: 0.5 });
     });
 
-    it('resolution_best_gt returns strictly greater values', async function () {
+    it('should resolution_best_gt returns strictly greater values', async function () {
       const response = await requestSender.searchProducts({ queryParams: { resolution_best_gt: 5 } });
       expectResponseStatus(response, 200);
 
       expect(names(response)).toEqual(['Low Res']);
     });
 
-    it('resolution_best_gte returns greater-or-equal values', async function () {
+    it('should resolution_best_gte returns greater-or-equal values', async function () {
       const response = await requestSender.searchProducts({ queryParams: { resolution_best_gte: 5 } });
       expectResponseStatus(response, 200);
 
       expect(names(response).sort()).toEqual(['Low Res', 'Mid Res']);
     });
 
-    it('resolution_best_lt returns strictly lesser values', async function () {
+    it('should resolution_best_lt returns strictly lesser values', async function () {
       const response = await requestSender.searchProducts({ queryParams: { resolution_best_lt: 5 } });
       expectResponseStatus(response, 200);
 
       expect(names(response)).toEqual(['High Res']);
     });
 
-    it('resolution_best_lte returns lesser-or-equal values', async function () {
+    it('should resolution_best_lte returns lesser-or-equal values', async function () {
       const response = await requestSender.searchProducts({ queryParams: { resolution_best_lte: 5 } });
       expectResponseStatus(response, 200);
 
       expect(names(response).sort()).toEqual(['High Res', 'Mid Res']);
     });
 
-    it('resolution_best_eq returns the exact match', async function () {
+    it('should resolution_best_eq returns the exact match', async function () {
       const response = await requestSender.searchProducts({ queryParams: { resolution_best_eq: 5 } });
       expectResponseStatus(response, 200);
 
       expect(names(response)).toEqual(['Mid Res']);
     });
 
-    it('min_zoom and max_zoom filters are wired the same way as resolution_best', async function () {
+    it('should min_zoom and max_zoom filters are wired the same way as resolution_best', async function () {
       await db('products').truncate();
       await createProduct({ name: 'Zoomed In', min_zoom: 10, max_zoom: 18 });
       await createProduct({ name: 'Zoomed Out', min_zoom: 0, max_zoom: 5 });
@@ -145,7 +145,7 @@ describe('GET /product (search)', function () {
   });
 
   describe('combining filters (implicit AND, no OR/NOT)', function () {
-    it('only returns rows matching every provided filter at once', async function () {
+    it('should only returns rows matching every provided filter at once', async function () {
       await createProduct({ name: 'A', type: 'raster', resolution_best: 1 });
       await createProduct({ name: 'B', type: 'raster', resolution_best: 100 });
       await createProduct({ name: 'C', type: 'QMesh', resolution_best: 1 });
@@ -159,7 +159,7 @@ describe('GET /product (search)', function () {
   });
 
   describe('spatial filters (intersects, contains, within)', function () {
-    it('intersects returns only products whose bounding polygon overlaps the given geometry', async function () {
+    it('should intersects returns only products whose bounding polygon overlaps the given geometry', async function () {
       await createProduct({ name: 'Tel Aviv Ortho', bounding_polygon: telAvivPolygon() });
       await createProduct({ name: 'New York Map', bounding_polygon: newYorkPolygon() });
 
@@ -170,7 +170,7 @@ describe('GET /product (search)', function () {
       expect(names(response)).toEqual(['Tel Aviv Ortho']);
     });
 
-    it('within returns only products whose bounding polygon is fully inside the given geometry', async function () {
+    it('should within returns only products whose bounding polygon is fully inside the given geometry', async function () {
       await createProduct({ name: 'Tel Aviv Ortho', bounding_polygon: telAvivPolygon() });
       await createProduct({ name: 'New York Map', bounding_polygon: newYorkPolygon() });
 
@@ -181,7 +181,7 @@ describe('GET /product (search)', function () {
       expect(names(response)).toEqual(['Tel Aviv Ortho']);
     });
 
-    it('contains returns only products whose bounding polygon fully contains the given geometry', async function () {
+    it('should contains returns only products whose bounding polygon fully contains the given geometry', async function () {
       await createProduct({ name: 'Tel Aviv Ortho', bounding_polygon: telAvivPolygon() });
       await createProduct({ name: 'New York Map', bounding_polygon: newYorkPolygon() });
 
@@ -192,7 +192,7 @@ describe('GET /product (search)', function () {
       expect(names(response)).toEqual(['Tel Aviv Ortho']);
     });
 
-    it('rejects a malformed geometry string with 400 instead of a raw DB error', async function () {
+    it('should rejects a malformed geometry string with 400 instead of a raw DB error', async function () {
       const response = await requestSender.searchProducts({ queryParams: { intersects: 'not-a-geometry' } });
 
       expectResponseStatus(response, 400);

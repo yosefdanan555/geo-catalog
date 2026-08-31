@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import type { FactoryFunction } from 'tsyringe';
-import { ProductController } from '../controllers/productController';
+import ProductController from '../controllers/productController';
 
 const productRouterFactory: FactoryFunction<Router> = (dependencyContainer) => {
   const router = Router();

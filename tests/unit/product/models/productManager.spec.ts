@@ -27,7 +27,7 @@ describe('ProductManager', () => {
   });
 
   describe('#create', () => {
-    it('delegates straight to the repository', async () => {
+    it('should delegates straight to the repository', async () => {
       const input = buildProductInput();
       const created = { ...input, id: 'some-id' };
       repository.create.mockResolvedValue(created);
@@ -40,14 +40,14 @@ describe('ProductManager', () => {
   });
 
   describe('#getById', () => {
-    it('returns the product when the repository finds one', async () => {
+    it('should returns the product when the repository finds one', async () => {
       const product = { ...buildProductInput(), id: 'some-id' };
       repository.findById.mockResolvedValue(product);
 
       await expect(productManager.getById('some-id')).resolves.toEqual(product);
     });
 
-    it('throws NotFoundError when the repository finds nothing', async () => {
+    it('should throws NotFoundError when the repository finds nothing', async () => {
       repository.findById.mockResolvedValue(undefined);
 
       await expect(productManager.getById('missing-id')).rejects.toThrow(NotFoundError);
@@ -55,7 +55,7 @@ describe('ProductManager', () => {
   });
 
   describe('#update', () => {
-    it('throws NotFoundError when the repository updates nothing', async () => {
+    it('should throws NotFoundError when the repository updates nothing', async () => {
       repository.update.mockResolvedValue(undefined);
 
       await expect(productManager.update('missing-id', buildProductInput())).rejects.toThrow(NotFoundError);
@@ -63,13 +63,13 @@ describe('ProductManager', () => {
   });
 
   describe('#remove', () => {
-    it('throws NotFoundError when the repository removes nothing', async () => {
+    it('should throws NotFoundError when the repository removes nothing', async () => {
       repository.remove.mockResolvedValue(false);
 
       await expect(productManager.remove('missing-id')).rejects.toThrow(NotFoundError);
     });
 
-    it('resolves when the repository removes a row', async () => {
+    it('should resolves when the repository removes a row', async () => {
       repository.remove.mockResolvedValue(true);
 
       await expect(productManager.remove('some-id')).resolves.toBeUndefined();
@@ -77,12 +77,12 @@ describe('ProductManager', () => {
   });
 
   describe('#search', () => {
-    it('rejects a malformed WKT geometry with BadRequestError instead of hitting the repository', async () => {
+    it('should rejects a malformed WKT geometry with BadRequestError instead of hitting the repository', async () => {
       await expect(productManager.search({ intersects: 'not-a-geometry' })).rejects.toThrow(BadRequestError);
       expect(repository.search).not.toHaveBeenCalled();
     });
 
-    it('delegates to the repository once every spatial filter looks like real WKT', async () => {
+    it('should delegates to the repository once every spatial filter looks like real WKT', async () => {
       repository.search.mockResolvedValue([]);
       const filters = { intersects: 'POINT(34.75 32.05)' };
 

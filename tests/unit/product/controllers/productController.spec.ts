@@ -3,15 +3,10 @@ import { jsLogger } from '@map-colonies/js-logger';
 import { Registry } from 'prom-client';
 import httpStatus from 'http-status-codes';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { ProductController } from '@src/product/controllers/productController';
+import ProductController from '@src/product/controllers/productController';
 import type { ProductManager } from '@src/product/models/productManager';
 import { buildProductInput } from '@tests/factories/product.factory';
 
-/**
- * A plain function-property double, not `Response` itself: the real interface's methods carry an
- * implicit `this`, which trips `@typescript-eslint/unbound-method` the moment one is passed to
- * `expect(...)` detached from its object (exactly what asserting on `res.status` below does).
- */
 interface FakeResponse {
   status: (code: number) => FakeResponse;
   json: (body: unknown) => FakeResponse;
@@ -26,14 +21,6 @@ function buildRes(): FakeResponse {
   return res;
 }
 
-/**
- * Every controller method is an `async` `TypedRequestHandlers` handler, each with its own
- * operation-specific `Request`/`Response` shape — reusing plain `Request`/`Response` for a loosely
- * shaped test double doesn't structurally match any of them. Inferring `Req`/`Res` straight off the
- * `handler` argument (rather than importing/reconstructing each operation's exact generic shape)
- * keeps every call site a plain object literal, and this project's `RequestHandler` return type is
- * `void` even though these are all really `async` — routing through `unknown` lets the test await it.
- */
 async function invoke<Req, Res>(
   handler: (req: Req, res: Res, next: NextFunction) => unknown,
   req: unknown,
@@ -64,13 +51,12 @@ describe('ProductController', () => {
       search: vi.fn(),
     };
     next = vi.fn() as typeof next;
-    // Fresh Registry per test: prom-client throws if the same metric name is registered twice on one registry.
     registry = new Registry();
     controller = new ProductController(await jsLogger({ enabled: false }), manager as unknown as ProductManager, registry);
   });
 
   describe('#createProduct', () => {
-    it('creates the product and responds 201', async () => {
+    it('should creates the product and responds 201', async () => {
       const input = buildProductInput();
       const created = { ...input, id: 'some-id' };
       manager.create.mockResolvedValue(created);
@@ -84,7 +70,7 @@ describe('ProductController', () => {
       expect(next).not.toHaveBeenCalled();
     });
 
-    it('forwards a manager failure to next instead of responding', async () => {
+    it('should forwards a manager failure to next instead of responding', async () => {
       const error = new Error('boom');
       manager.create.mockRejectedValue(error);
       const res = buildRes();
@@ -97,7 +83,7 @@ describe('ProductController', () => {
   });
 
   describe('#searchProducts', () => {
-    it('returns matching products with 200', async () => {
+    it('should returns matching products with 200', async () => {
       const products = [{ ...buildProductInput(), id: 'some-id' }];
       manager.search.mockResolvedValue(products);
       const res = buildRes();
@@ -109,7 +95,7 @@ describe('ProductController', () => {
       expect(res.json).toHaveBeenCalledWith(products);
     });
 
-    it('forwards a manager failure to next', async () => {
+    it('should forwards a manager failure to next', async () => {
       const error = new Error('bad geometry');
       manager.search.mockRejectedValue(error);
       const res = buildRes();
@@ -121,7 +107,7 @@ describe('ProductController', () => {
   });
 
   describe('#getProductById', () => {
-    it('returns the product with 200', async () => {
+    it('should returns the product with 200', async () => {
       const product = { ...buildProductInput(), id: 'some-id' };
       manager.getById.mockResolvedValue(product);
       const res = buildRes();
@@ -133,7 +119,7 @@ describe('ProductController', () => {
       expect(res.json).toHaveBeenCalledWith(product);
     });
 
-    it('forwards a NotFoundError to next', async () => {
+    it('should forwards a NotFoundError to next', async () => {
       const error = new Error('not found');
       manager.getById.mockRejectedValue(error);
       const res = buildRes();
@@ -145,7 +131,7 @@ describe('ProductController', () => {
   });
 
   describe('#updateProduct', () => {
-    it('returns the updated product with 200', async () => {
+    it('should returns the updated product with 200', async () => {
       const input = buildProductInput();
       const updated = { ...input, id: 'some-id' };
       manager.update.mockResolvedValue(updated);
@@ -158,7 +144,7 @@ describe('ProductController', () => {
       expect(res.json).toHaveBeenCalledWith(updated);
     });
 
-    it('forwards a NotFoundError to next', async () => {
+    it('should forwards a NotFoundError to next', async () => {
       const error = new Error('not found');
       manager.update.mockRejectedValue(error);
       const res = buildRes();
@@ -170,7 +156,7 @@ describe('ProductController', () => {
   });
 
   describe('#deleteProduct', () => {
-    it('responds 204 with no body', async () => {
+    it('should responds 204 with no body', async () => {
       manager.remove.mockResolvedValue(undefined);
       const res = buildRes();
 
@@ -181,7 +167,7 @@ describe('ProductController', () => {
       expect(res.send).toHaveBeenCalledWith();
     });
 
-    it('forwards a NotFoundError to next', async () => {
+    it('should forwards a NotFoundError to next', async () => {
       const error = new Error('not found');
       manager.remove.mockRejectedValue(error);
       const res = buildRes();
@@ -211,7 +197,7 @@ describe('ProductController', () => {
       )?.value;
     }
 
-    it('counts a successful action and records its duration under that operation', async () => {
+    it('should counts a successful action and records its duration under that operation', async () => {
       manager.getById.mockResolvedValue({ id: 'some-id' });
 
       await invoke(controller.getProductById, { params: { id: 'some-id' } }, buildRes(), next);
@@ -221,7 +207,7 @@ describe('ProductController', () => {
       await expect(counterValue('getById', 'failure')).resolves.toBeUndefined();
     });
 
-    it('counts a thrown action as a failure and still records its duration', async () => {
+    it('should counts a thrown action as a failure and still records its duration', async () => {
       manager.search.mockRejectedValue(new Error('boom'));
 
       await invoke(controller.searchProducts, { query: {} }, buildRes(), next);
@@ -231,7 +217,7 @@ describe('ProductController', () => {
       await expect(counterValue('search', 'success')).resolves.toBeUndefined();
     });
 
-    it('keeps each action on its own operation label', async () => {
+    it('should keeps each action on its own operation label', async () => {
       const input = buildProductInput();
       manager.create.mockResolvedValue({ ...input, id: 'some-id' });
       manager.remove.mockResolvedValue(undefined);
@@ -245,13 +231,14 @@ describe('ProductController', () => {
       await expect(counterValue('update', 'success')).resolves.toBeUndefined();
     });
 
-    it('still increments the standalone created_product counter', async () => {
+    it('should still increments the standalone created_product counter', async () => {
       const input = buildProductInput();
       manager.create.mockResolvedValue({ ...input, id: 'some-id' });
 
       await invoke(controller.createProduct, { body: input }, buildRes(), next);
 
       const metric = await registry.getSingleMetric('created_product')?.get();
+
       expect(metric?.values[0]?.value).toBe(1);
     });
   });

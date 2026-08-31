@@ -7,7 +7,6 @@ import { SERVICES } from '@common/constants';
 import { ProductManager } from '../models/productManager';
 import type { ProductSearchFilters } from '../models/product';
 
-/** One label value per product action, used for both metrics below. */
 type ProductOperation = 'create' | 'search' | 'getById' | 'update' | 'delete';
 
 const OPERATION_LABELS = ['operation', 'outcome'] as const;
@@ -16,7 +15,7 @@ const OPERATION_LABELS = ['operation', 'outcome'] as const;
 const DURATION_BUCKETS_SECONDS = [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5];
 
 @injectable()
-export class ProductController {
+class ProductController {
   private readonly createdProductCounter: Counter;
   private readonly operationCounter: Counter<(typeof OPERATION_LABELS)[number]>;
   private readonly operationDuration: Histogram<(typeof OPERATION_LABELS)[number]>;
@@ -48,15 +47,6 @@ export class ProductController {
     });
   }
 
-  /**
-   * Records one product action: how many ran, split by outcome, and how long they
-   * took. `outcome="failure"` covers anything the manager throws — a validation
-   * BadRequestError as much as a database outage — so the ratio between the two
-   * label values is a usable error rate.
-   *
-   * This measures the domain call only. Whole-request latency and HTTP status
-   * codes are already covered by the express middleware's `http_request_duration_seconds`.
-   */
   private async track<T>(operation: ProductOperation, action: () => Promise<T>): Promise<T> {
     const stopTimer = this.operationDuration.startTimer({ operation });
 
@@ -118,3 +108,5 @@ export class ProductController {
     }
   };
 }
+
+export default ProductController;
