@@ -4,7 +4,7 @@ FROM node:24 AS build
 WORKDIR /tmp/buildApp
 
 COPY ./package*.json ./
-RUN npm install
+RUN npm ci --ignore-scripts
 COPY . .
 RUN npm run build
 
@@ -18,7 +18,7 @@ ENV SERVER_PORT=8080
 WORKDIR /usr/src/app
 
 COPY --chown=node:node package*.json ./
-RUN npm ci --omit=dev
+RUN npm ci --omit=dev --ignore-scripts
 
 COPY --chown=node:node --from=build /tmp/buildApp/dist .
 
